@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: '@project.name@'
+  redis:
+    host: 0.0.0.0
+    port: 55000
+    password: redispw
+app:
+  integration:
+    kazan:
+      token:
+    styx:
