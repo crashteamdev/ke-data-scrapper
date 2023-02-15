@@ -1,6 +1,7 @@
 package dev.crashteam.ke_data_scrapper.job;
 
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
+import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
@@ -11,12 +12,17 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.RedisStreamCommands;
+import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.SerializationUtils;
 
-import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,6 +42,12 @@ public class CategoryGqlJob implements Job {
     @Autowired
     RetryTemplate retryTemplate;
 
+    @Autowired
+    RedisStreamCommands streamCommands;
+
+    @Value("${app.stream.key}")
+    public String streamKey;
+
     @Override
     @SneakyThrows
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -54,6 +66,7 @@ public class CategoryGqlJob implements Job {
                             if (error.getMessage().contains("offset")) {
                                 log.info("Finished collecting data for id - {}, " +
                                         "because of response error object with message - {}", categoryId, error.getMessage());
+                                return null;
                             } else {
                                 offset.addAndGet(limit);
                                 jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
@@ -74,7 +87,7 @@ public class CategoryGqlJob implements Job {
                 log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
 
                 for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                    Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getId)
+                    Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId)
                             .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
                     KeProduct.ProductData productData = retryTemplate.execute((RetryCallback<KeProduct.ProductData, KeGqlRequestException>) retryContext -> {
                         KeProduct product = keService.getProduct(itemId);
@@ -94,45 +107,11 @@ public class CategoryGqlJob implements Job {
                         log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));
                         continue;
                     }
-                    KeProduct.ProductSeller productSeller = productData.getSeller();
-                    KeProductMessage.KeProductSeller seller = KeProductMessage.KeProductSeller.builder()
-                            .accountId(productSeller.getSellerAccountId())
-                            .id(productSeller.getId())
-                            .rating(productSeller.getRating())
-                            .registrationDate(productSeller.getRegistrationDate())
-                            .reviews(productSeller.getReviews())
-                            .sellerLink(productSeller.getLink())
-                            .sellerTitle(productSeller.getTitle())
-                            .orders(productSeller.getOrders())
-                            .build();
+                    KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
 
-                    List<KeProductMessage.KeItemSku> skuList = productData.getSkuList()
-                            .stream()
-                            .map(sku -> {
-//                                sku.getCharacteristics().stream()
-//                                        .filter()
-                                return KeProductMessage.KeItemSku.builder()
-                                        .skuId(sku.getId())
-                                        .availableAmount(sku.getAvailableAmount())
-                                        .fullPrice(sku.getFullPrice())
-                                        .purchasePrice(sku.getPurchasePrice())
-                                        .build();
-                            }).toList();
-
-                    KeProductMessage productMessage = KeProductMessage.builder()
-                            .rating(productData.getRating())
-                            .category(productData.getCategory())
-                            .orders(productData.getOrdersAmount())
-                            .productId(productData.getId())
-                            .reviewsAmount(productData.getReviewsAmount())
-                            .time(LocalDateTime.now())
-                            .title(productData.getTitle())
-                            .totalAvailableAmount(productData.getTotalAvailableAmount())
-                            .seller(seller)
-                            .skuList(skuList)
-                            .build();
-
-
+                    RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
+                            Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8), SerializationUtils.serialize(productMessage)));
+                    log.info("Posted product record with id - {}", recordId);
                 }
                 offset.addAndGet(limit);
                 jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);

@@ -4,12 +4,13 @@ import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import lombok.Builder;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
 @Builder
-public class KeProductMessage {
+public class KeProductMessage implements Serializable {
 
     private Long productId;
     private LocalDateTime time;
@@ -24,10 +25,10 @@ public class KeProductMessage {
 
     @Data
     @Builder
-    public static class KeItemSku {
+    public static class KeItemSku implements Serializable {
         private Long skuId;
         private String photoKey;
-        private KeItemCharacteristic characteristic;
+        private List<KeItemCharacteristic> characteristics;
         private String purchasePrice;
         private String fullPrice;
         private Long availableAmount;
@@ -35,7 +36,7 @@ public class KeProductMessage {
 
     @Data
     @Builder
-    public static class KeItemCharacteristic {
+    public static class KeItemCharacteristic implements Serializable {
         private String type;
         private String title;
         private String value;
@@ -43,7 +44,7 @@ public class KeProductMessage {
 
     @Data
     @Builder
-    public static class KeProductSeller {
+    public static class KeProductSeller implements Serializable {
         private Long id;
         private Long accountId;
         private String sellerLink;
