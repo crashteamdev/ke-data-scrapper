@@ -77,6 +77,7 @@ public class KeGQLResponse {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CharacteristicValue {
+        private Long id;
         private String value;
         private String title;
         private CharacteristicWrapper characteristic;
