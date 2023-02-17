@@ -3,6 +3,7 @@ package dev.crashteam.ke_data_scrapper.job;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionTSDocument;
+import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionTSDocumentWrapper;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
@@ -13,14 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.SerializationUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Component
 @DisallowConcurrentExecution
-public class PositionGqlJob implements Job {
+public class PositionJob implements Job {
 
     @Autowired
     KeService keService;
@@ -50,7 +50,7 @@ public class PositionGqlJob implements Job {
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
-        Long categoryId = (Long) jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY);
+        Long categoryId = (Long) jobDetail.getJobDataMap().get(Constant.POSITION_CATEGORY_KEY);
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         log.info("Starting position job with category id - {}", categoryId);
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
@@ -120,7 +120,7 @@ public class PositionGqlJob implements Job {
                                     .productId(productItemCard.getProductId())
                                     .skuId(skuId)
                                     .categoryId(categoryId)
-                                    .time(LocalDateTime.now())
+                                    .time(Instant.now().toEpochMilli())
                                     .build();
                             productPositionList.add(positionTSDocument);
                         }
@@ -137,21 +137,26 @@ public class PositionGqlJob implements Job {
                                     .productId(productItemCard.getProductId())
                                     .skuId(skuId)
                                     .categoryId(categoryId)
-                                    .time(LocalDateTime.now())
+                                    .time(Instant.now().toEpochMilli())
                                     .build();
                             productPositionList.add(positionTSDocument);
                         }
                     }
                     if (!CollectionUtils.isEmpty(productPositionList)) {
+                        ProductPositionTSDocumentWrapper documentWrapper = new ProductPositionTSDocumentWrapper();
+                        documentWrapper.setPositionTSDocuments(productPositionList);
                         RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
-                                Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8), SerializationUtils.serialize(productPositionList)));
-                        log.info("Posted position [count={}] record with id - {}", productPositionList.size(), recordId);
+                                Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
+                                        SerializationUtils.serialize(documentWrapper)));
+                        log.info("Posted [stream={}] position [count={}] record with id - [{}]",
+                                streamKey, productPositionList.size(), recordId);
                     }
                     offset.addAndGet(limit);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                 }
             } catch (Exception e) {
                 log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId, e.getMessage());
+                log.error("ERROR - ", Optional.ofNullable(e.getCause()).orElse(e));
                 break;
             }
         }

@@ -18,7 +18,7 @@ public class ProductMasterJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        creatorService.createJob(Constant.PRODUCT_JOB_NAME, Constant.CATEGORY_ID_KEY, ProductGqlJob.class);
+        creatorService.createJob(Constant.PRODUCT_JOB_NAME, Constant.CATEGORY_ID_KEY, ProductJob.class);
     }
 }
 

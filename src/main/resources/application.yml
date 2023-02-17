@@ -6,8 +6,13 @@ spring:
     port: 55000
     password: redispw
 app:
+  job:
+    cron:
+      product-job: 0 0 0,21 ? * * *
+      position-job:
   stream:
     key:
+    group:
   integration:
     kazan:
       token:

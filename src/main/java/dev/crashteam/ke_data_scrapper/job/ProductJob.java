@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Component
 @DisallowConcurrentExecution
-public class ProductGqlJob implements Job {
+public class ProductJob implements Job {
 
     @Autowired
     KeService keService;
