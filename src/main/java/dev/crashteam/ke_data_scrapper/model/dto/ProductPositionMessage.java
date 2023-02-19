@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Data
 @Builder
-public class ProductPositionTSDocument implements Serializable {
+public class ProductPositionMessage implements Serializable {
     private Long position;
     private Long productId;
     private Long skuId;

@@ -64,7 +64,7 @@ public class KeProductToMessageMapper {
 
         return KeProductMessage.builder()
                 .rating(productData.getRating())
-                .category(productData.getCategory())
+                .category(getCategory(productData.getCategory()))
                 .orders(productData.getOrdersAmount())
                 .productId(productData.getId())
                 .reviewsAmount(productData.getReviewsAmount())
@@ -75,5 +75,16 @@ public class KeProductToMessageMapper {
                 .skuList(skuList)
                 .build();
 
+    }
+
+    private static KeProductMessage.ProductCategory getCategory(KeProduct.ProductCategory productCategory) {
+        KeProductMessage.ProductCategory category = new KeProductMessage.ProductCategory();
+        category.setId(productCategory.getId());
+        category.setProductAmount(productCategory.getProductAmount());
+        category.setTitle(productCategory.getTitle());
+        if (productCategory.getParent() != null) {
+            category.setParent(getCategory(productCategory.getParent()));
+        }
+        return category;
     }
 }

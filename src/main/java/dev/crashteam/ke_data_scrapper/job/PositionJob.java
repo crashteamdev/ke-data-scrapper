@@ -2,8 +2,7 @@ package dev.crashteam.ke_data_scrapper.job;
 
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
-import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionTSDocument;
-import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionTSDocumentWrapper;
+import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
@@ -56,7 +55,7 @@ public class PositionJob implements Job {
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
         long limit = 48;
         long position = 0;
-        List<ProductPositionTSDocument> productPositionList = new ArrayList<>();
+        List<ProductPositionMessage> productPositionList = new ArrayList<>();
         while (true) {
             try {
                 KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
@@ -115,14 +114,18 @@ public class PositionJob implements Job {
                                     return false;
                                 }).map(KeProduct.SkuData::getId).toList();
                         for (Long skuId : skuIds) {
-                            ProductPositionTSDocument positionTSDocument = ProductPositionTSDocument.builder()
+                            ProductPositionMessage positionMessage = ProductPositionMessage.builder()
                                     .position(position)
                                     .productId(productItemCard.getProductId())
                                     .skuId(skuId)
                                     .categoryId(categoryId)
                                     .time(Instant.now().toEpochMilli())
                                     .build();
-                            productPositionList.add(positionTSDocument);
+                            RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
+                                    Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
+                                            SerializationUtils.serialize(positionMessage)));
+                            log.info("Posted [stream={}] position record with id - [{}]",
+                                    streamKey, recordId);
                         }
                     } else {
                         List<Long> skuIds = productResponse.getSkuList()
@@ -132,31 +135,26 @@ public class PositionJob implements Job {
                                 .toList();
 
                         for (Long skuId : skuIds) {
-                            ProductPositionTSDocument positionTSDocument = ProductPositionTSDocument.builder()
+                            ProductPositionMessage positionMessage = ProductPositionMessage.builder()
                                     .position(position)
                                     .productId(productItemCard.getProductId())
                                     .skuId(skuId)
                                     .categoryId(categoryId)
                                     .time(Instant.now().toEpochMilli())
                                     .build();
-                            productPositionList.add(positionTSDocument);
+                            RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
+                                    Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
+                                            SerializationUtils.serialize(positionMessage)));
+                            log.info("Posted [stream={}] position record with id - [{}]",
+                                    streamKey, recordId);
                         }
-                    }
-                    if (!CollectionUtils.isEmpty(productPositionList)) {
-                        ProductPositionTSDocumentWrapper documentWrapper = new ProductPositionTSDocumentWrapper();
-                        documentWrapper.setPositionTSDocuments(productPositionList);
-                        RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
-                                Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
-                                        SerializationUtils.serialize(documentWrapper)));
-                        log.info("Posted [stream={}] position [count={}] record with id - [{}]",
-                                streamKey, productPositionList.size(), recordId);
                     }
                     offset.addAndGet(limit);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                 }
             } catch (Exception e) {
-                log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId, e.getMessage());
-                log.error("ERROR - ", Optional.ofNullable(e.getCause()).orElse(e));
+                log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId,
+                        Optional.ofNullable(e.getCause()).orElse(e).getMessage());
                 break;
             }
         }

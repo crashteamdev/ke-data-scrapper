@@ -8,5 +8,5 @@ import java.util.List;
 @Data
 public class ProductPositionTSDocumentWrapper implements Serializable {
 
-    private List<ProductPositionTSDocument> positionTSDocuments;
+    private List<ProductPositionMessage> positionTSDocuments;
 }
