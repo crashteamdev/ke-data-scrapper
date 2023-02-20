@@ -7,11 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class RedisMessagePublisher implements MessagePublisher {
 
-    @Autowired
-    RedisTemplate<String, Object> redisTemplate;
-
     @Override
     public void publish(String topic, Object message) {
-        redisTemplate.convertAndSend(topic, message);
     }
 }

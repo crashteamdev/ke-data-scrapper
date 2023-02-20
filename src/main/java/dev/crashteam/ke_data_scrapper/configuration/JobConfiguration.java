@@ -1,7 +1,8 @@
 package dev.crashteam.ke_data_scrapper.configuration;
 
-import dev.crashteam.ke_data_scrapper.job.PositionMasterJob;
-import dev.crashteam.ke_data_scrapper.job.ProductMasterJob;
+import dev.crashteam.ke_data_scrapper.job.category.CategoryJob;
+import dev.crashteam.ke_data_scrapper.job.position.PositionMasterJob;
+import dev.crashteam.ke_data_scrapper.job.product.ProductMasterJob;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.job.JobModel;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +26,17 @@ public class JobConfiguration {
     @Value("${app.job.cron.position-job}")
     private String positionJobCron;
 
+    @Value("${app.job.cron.category-job}")
+    private String categoryJobCron;
+
     @PostConstruct
     public void init() {
         scheduleJob(new JobModel("product-master-job", ProductMasterJob.class, productJobCron,
-                Constant.PRODUCT_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+               Constant.PRODUCT_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
         scheduleJob(new JobModel("position-master-job", PositionMasterJob.class, positionJobCron,
                 Constant.POSITION_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel("category-master-job", CategoryJob.class, categoryJobCron,
+                Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
     }
 
     private void scheduleJob(JobModel jobModel) {

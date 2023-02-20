@@ -1,4 +1,4 @@
-package dev.crashteam.ke_data_scrapper.job;
+package dev.crashteam.ke_data_scrapper.job.product;
 
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.SerializationUtils;
@@ -33,18 +31,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ProductJob implements Job {
 
     @Autowired
-    KeService keService;
-
-    @Autowired
-    RetryTemplate retryTemplate;
-
-    @Autowired
     RedisStreamCommands streamCommands;
 
     @Autowired
     JobUtilService jobUtilService;
 
-    @Value("${app.stream.key}")
+    @Value("${app.stream.product.key}")
     public String streamKey;
 
     @Override

@@ -1,4 +1,4 @@
-package dev.crashteam.ke_data_scrapper.job;
+package dev.crashteam.ke_data_scrapper.job.product;
 
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.service.SimpleTriggerJobCreatorService;
@@ -12,12 +12,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PositionMasterJob implements Job {
+public class ProductMasterJob implements Job {
 
     private final SimpleTriggerJobCreatorService creatorService;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        creatorService.createJob(Constant.POSITION_JOB_NAME, Constant.POSITION_CATEGORY_KEY, PositionJob.class);
+        creatorService.createJob(Constant.PRODUCT_JOB_NAME, Constant.CATEGORY_ID_KEY, ProductJob.class);
     }
 }
+

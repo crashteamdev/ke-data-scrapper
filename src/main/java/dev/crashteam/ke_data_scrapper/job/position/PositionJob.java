@@ -1,4 +1,4 @@
-package dev.crashteam.ke_data_scrapper.job;
+package dev.crashteam.ke_data_scrapper.job.position;
 
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
@@ -6,21 +6,18 @@ import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
-import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.SerializationUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,18 +29,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PositionJob implements Job {
 
     @Autowired
-    KeService keService;
-
-    @Autowired
-    RetryTemplate retryTemplate;
-
-    @Autowired
     JobUtilService jobUtilService;
 
     @Autowired
     RedisStreamCommands streamCommands;
 
-    @Value("${app.stream.key}")
+    @Value("${app.stream.position.key}")
     public String streamKey;
 
     @Override
@@ -55,7 +46,6 @@ public class PositionJob implements Job {
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
         long limit = 48;
         long position = 0;
-        List<ProductPositionMessage> productPositionList = new ArrayList<>();
         while (true) {
             try {
                 KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
