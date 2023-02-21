@@ -25,3 +25,7 @@ app:
     kazan:
       token:
     styx:
+
+loki:
+  host: localhost
+  enabled: false
