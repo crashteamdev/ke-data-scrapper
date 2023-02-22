@@ -1,5 +1,6 @@
 package dev.crashteam.ke_data_scrapper.job.product;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
 import dev.crashteam.ke_data_scrapper.model.Constant;
@@ -16,7 +17,6 @@ import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.SerializationUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -34,6 +34,9 @@ public class ProductJob implements Job {
 
     @Autowired
     JobUtilService jobUtilService;
+
+    @Autowired
+    ObjectMapper objectMapper;
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -54,7 +57,7 @@ public class ProductJob implements Job {
                     break;
                 }
                 var productItems = Optional.ofNullable(gqlResponse.getData()
-                                .getMakeSearch()).map(KeGQLResponse.MakeSearch::getItems)
+                        .getMakeSearch()).map(KeGQLResponse.MakeSearch::getItems)
                         .orElseThrow(() -> new KeGqlRequestException("Item's can't be null!"));
                 log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
 
@@ -68,9 +71,8 @@ public class ProductJob implements Job {
                         continue;
                     }
                     KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
-
                     RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
-                            Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8), SerializationUtils.serialize(productMessage)));
+                            Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8), objectMapper.writeValueAsBytes(productMessage)));
                     log.info("Posted product record with id - {}", recordId);
                 }
                 offset.addAndGet(limit);

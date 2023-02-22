@@ -1,5 +1,6 @@
 package dev.crashteam.ke_data_scrapper.job.position;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
@@ -34,6 +35,9 @@ public class PositionJob implements Job {
     @Autowired
     RedisStreamCommands streamCommands;
 
+    @Autowired
+    ObjectMapper objectMapper;
+
     @Value("${app.stream.position.key}")
     public String streamKey;
 
@@ -53,7 +57,7 @@ public class PositionJob implements Job {
                     break;
                 }
                 var productItems = Optional.ofNullable(gqlResponse.getData()
-                                .getMakeSearch()).map(KeGQLResponse.MakeSearch::getItems)
+                        .getMakeSearch()).map(KeGQLResponse.MakeSearch::getItems)
                         .orElseThrow(() -> new KeGqlRequestException("Item's can't be null!"));
                 log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
 
@@ -134,7 +138,7 @@ public class PositionJob implements Job {
                                     .build();
                             RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
                                     Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
-                                            SerializationUtils.serialize(positionMessage)));
+                                            objectMapper.writeValueAsBytes(positionMessage)));
                             log.info("Posted [stream={}] position record with id - [{}]",
                                     streamKey, recordId);
                         }
