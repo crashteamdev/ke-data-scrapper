@@ -1,6 +1,7 @@
 package dev.crashteam.ke_data_scrapper.service.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.ke_data_scrapper.exception.CategoryRequestException;
 import dev.crashteam.ke_data_scrapper.model.ProxyRequestParams;
 import dev.crashteam.ke_data_scrapper.model.StyxProxyResult;
 import dev.crashteam.ke_data_scrapper.model.ke.*;
@@ -103,6 +104,27 @@ public class KeService {
         }
         log.info("Collected id's size - {}", ids.size());
         return ids;
+    }
+
+    @SneakyThrows
+    public Set<Long> getIdsByMainCategory() {
+        log.info("Collecting category id's...");
+        Set<Long> ids = new HashSet<>();
+        KeCategoryChild categoryData = getCategoryData(1L);
+        if (categoryData.getPayload() != null && categoryData.getPayload().getCategory() != null) {
+            for (KeCategory.Data category : categoryData.getPayload().getCategory().getChildren()) {
+                extractIds(category, ids);
+            }
+        } else {
+            throw new CategoryRequestException("Id collecting failed");
+        }
+        log.info("Collected id's size - {}", ids.size());
+        return ids;
+    }
+
+    private void extractIds(KeCategory.Data data, Set<Long> ids) {
+        ids.add(data.getId());
+        extractChildIds(data, ids);
     }
 
     private Callable<Void> extractIdsAsync(KeCategory.Data data, Set<Long> ids) {
