@@ -54,12 +54,14 @@ public class CategoryJob implements Job {
             }
             return categoryData.getPayload().getCategory();
         });
-        KeCategoryMessage categoryMessage = KeCategoryToMessageMapper.categoryToMessage(data);
-        RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
-                Collections.singletonMap("category".getBytes(StandardCharsets.UTF_8),
-                        objectMapper.writeValueAsBytes(categoryMessage)));
-        log.info("Posted [stream={}] category record with id - [{}]",
-                streamKey, recordId);
+        for (KeCategory.Data dataChild : data.getChildren()) {
+            KeCategoryMessage categoryMessage = KeCategoryToMessageMapper.categoryToMessage(dataChild);
+            RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
+                    Collections.singletonMap("category".getBytes(StandardCharsets.UTF_8),
+                            objectMapper.writeValueAsBytes(categoryMessage)));
+            log.info("Posted [stream={}] category record with id - [{}]",
+                    streamKey, recordId);
+        }
 
     }
 }

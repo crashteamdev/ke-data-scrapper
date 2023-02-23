@@ -3,7 +3,7 @@ package dev.crashteam.ke_data_scrapper.mapper;
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,7 +68,10 @@ public class KeProductToMessageMapper {
                 .orders(productData.getOrdersAmount())
                 .productId(productData.getId())
                 .reviewsAmount(productData.getReviewsAmount())
-                .time(LocalDateTime.now())
+                .description(productData.getDescription())
+                .tags(productData.getTags())
+                .attributes(productData.getAttributes())
+                .time(Instant.now().toEpochMilli())
                 .title(productData.getTitle())
                 .totalAvailableAmount(productData.getTotalAvailableAmount())
                 .seller(seller)

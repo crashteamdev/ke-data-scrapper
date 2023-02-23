@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -12,12 +11,15 @@ import java.util.List;
 public class KeProductMessage implements Serializable {
 
     private Long productId;
-    private LocalDateTime time;
+    private Long time;
     private String title;
     private Long totalAvailableAmount;
     private Long orders;
     private Long reviewsAmount;
     private String rating;
+    private String description;
+    private List<String> tags;
+    private List<String> attributes;
     private List<KeItemSku> skuList;
     private KeProductSeller seller;
     private ProductCategory category;
