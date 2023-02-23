@@ -38,6 +38,9 @@ public class KeProduct {
         private List<SkuData> skuList;
         private ProductSeller seller;
         private Feedback topFeedback;
+        private boolean isEco;
+        private boolean isPerishable;
+
     }
 
     @Data

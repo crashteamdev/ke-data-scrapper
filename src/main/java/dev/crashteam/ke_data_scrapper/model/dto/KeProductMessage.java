@@ -1,5 +1,6 @@
 package dev.crashteam.ke_data_scrapper.model.dto;
 
+import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import lombok.Builder;
 import lombok.Data;
 
@@ -23,6 +24,10 @@ public class KeProductMessage implements Serializable {
     private List<KeItemSku> skuList;
     private KeProductSeller seller;
     private ProductCategory category;
+    private List<CharacteristicsData> characteristics;
+    private List<ProductPhoto> photos;
+    private boolean isEco;
+    private boolean isPerishable;
 
     @Data
     @Builder
@@ -54,6 +59,7 @@ public class KeProductMessage implements Serializable {
         private Long orders;
         private String rating;
         private Long registrationDate;
+        private String description;
     }
 
     @Data
@@ -62,5 +68,25 @@ public class KeProductMessage implements Serializable {
         private String title;
         private Long productAmount;
         private ProductCategory parent;
+    }
+
+    @Data
+    public static class CharacteristicsData {
+        private Long id;
+        private String title;
+        private List<Characteristic> values;
+    }
+
+    @Data
+    public static class Characteristic {
+        private Long id;
+        private String title;
+        private String value;
+    }
+
+    @Data
+    public static class ProductPhoto {
+        private String color;
+        private String photoKey;
     }
 }

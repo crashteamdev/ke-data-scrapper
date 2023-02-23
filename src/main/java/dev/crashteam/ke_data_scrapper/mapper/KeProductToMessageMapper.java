@@ -4,6 +4,7 @@ import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -22,6 +23,31 @@ public class KeProductToMessageMapper {
                 .sellerTitle(productSeller.getTitle())
                 .orders(productSeller.getOrders())
                 .build();
+
+        List<KeProductMessage.CharacteristicsData> characteristicsData = new ArrayList<>();
+        for (KeProduct.CharacteristicsData characteristic : productData.getCharacteristics()) {
+            var messageCharacteristic = new KeProductMessage.CharacteristicsData();
+            messageCharacteristic.setId(characteristic.getId());
+            messageCharacteristic.setTitle(characteristic.getTitle());
+            List<KeProductMessage.Characteristic> characteristicsValues = new ArrayList<>();
+            for (KeProduct.Characteristic characteristicValue : characteristic.getValues()) {
+                var messageCharacteristicValue = new KeProductMessage.Characteristic();
+                messageCharacteristicValue.setValue(characteristicValue.getValue());
+                messageCharacteristicValue.setTitle(characteristicValue.getTitle());
+                messageCharacteristicValue.setId(characteristicValue.getId());
+                characteristicsValues.add(messageCharacteristicValue);
+            }
+            messageCharacteristic.setValues(characteristicsValues);
+            characteristicsData.add(messageCharacteristic);
+        }
+
+        List<KeProductMessage.ProductPhoto> photos = new ArrayList<>();
+        for (KeProduct.ProductPhoto dataPhoto : productData.getPhotos()) {
+            KeProductMessage.ProductPhoto photo = new KeProductMessage.ProductPhoto();
+            photo.setPhotoKey(dataPhoto.getPhotoKey());
+            photo.setColor(dataPhoto.getColor());
+            photos.add(photo);
+        }
 
         List<KeProductMessage.KeItemSku> skuList = productData.getSkuList()
                 .stream()
@@ -76,6 +102,10 @@ public class KeProductToMessageMapper {
                 .totalAvailableAmount(productData.getTotalAvailableAmount())
                 .seller(seller)
                 .skuList(skuList)
+                .characteristics(characteristicsData)
+                .photos(photos)
+                .isEco(productData.isEco())
+                .isPerishable(productData.isPerishable())
                 .build();
 
     }
