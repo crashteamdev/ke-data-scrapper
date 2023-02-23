@@ -15,7 +15,6 @@ import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.SerializationUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -117,7 +116,7 @@ public class PositionJob implements Job {
                                     .build();
                             RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
                                     Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
-                                            SerializationUtils.serialize(positionMessage)));
+                                            objectMapper.writeValueAsBytes(positionMessage)));
                             log.info("Posted [stream={}] position record with id - [{}]",
                                     streamKey, recordId);
                         }
