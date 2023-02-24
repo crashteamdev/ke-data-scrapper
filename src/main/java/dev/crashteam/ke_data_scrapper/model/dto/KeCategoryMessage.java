@@ -16,5 +16,5 @@ public class KeCategoryMessage implements Serializable {
     private Boolean eco;
     private String title;
     private List<KeCategoryMessage> children;
-    private LocalDateTime timestamp;
+    private Long time;
 }

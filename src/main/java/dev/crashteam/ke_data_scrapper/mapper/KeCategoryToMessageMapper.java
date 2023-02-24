@@ -4,7 +4,7 @@ import dev.crashteam.ke_data_scrapper.model.dto.KeCategoryMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeCategory;
 import org.springframework.util.CollectionUtils;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +16,7 @@ public class KeCategoryToMessageMapper {
                 .adult(data.isAdult())
                 .eco(data.isEco())
                 .title(data.getTitle())
-                .timestamp(LocalDateTime.now())
+                .time(Instant.now().toEpochMilli())
                 .build();
         if (!CollectionUtils.isEmpty(data.getChildren())) {
             List<KeCategoryMessage> childrenCategories = new ArrayList<>();
