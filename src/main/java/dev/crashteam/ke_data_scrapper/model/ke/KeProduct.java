@@ -100,6 +100,7 @@ public class KeProduct {
         private Long reviews;
         private Long orders;
         private Long sellerAccountId;
+        private List<Contact> contacts;
     }
 
     @Data
@@ -130,5 +131,11 @@ public class KeProduct {
         private String code;
         private String message;
         private String detailMessage;
+    }
+
+    @Data
+    public static class Contact {
+        private String type;
+        private String value;
     }
 }

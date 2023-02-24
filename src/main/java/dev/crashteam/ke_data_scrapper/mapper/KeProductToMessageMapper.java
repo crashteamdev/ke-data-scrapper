@@ -12,17 +12,6 @@ import java.util.Objects;
 public class KeProductToMessageMapper {
 
     public static KeProductMessage productToMessage(KeProduct.ProductData productData) {
-        KeProduct.ProductSeller productSeller = productData.getSeller();
-        KeProductMessage.KeProductSeller seller = KeProductMessage.KeProductSeller.builder()
-                .accountId(productSeller.getSellerAccountId())
-                .id(productSeller.getId())
-                .rating(productSeller.getRating())
-                .registrationDate(productSeller.getRegistrationDate())
-                .reviews(productSeller.getReviews())
-                .sellerLink(productSeller.getLink())
-                .sellerTitle(productSeller.getTitle())
-                .orders(productSeller.getOrders())
-                .build();
 
         List<KeProductMessage.CharacteristicsData> characteristicsData = new ArrayList<>();
         for (KeProduct.CharacteristicsData characteristic : productData.getCharacteristics()) {
@@ -100,7 +89,7 @@ public class KeProductToMessageMapper {
                 .time(Instant.now().toEpochMilli())
                 .title(productData.getTitle())
                 .totalAvailableAmount(productData.getTotalAvailableAmount())
-                .seller(seller)
+                .seller(getSeller(productData))
                 .skuList(skuList)
                 .characteristics(characteristicsData)
                 .photos(photos)
@@ -119,5 +108,30 @@ public class KeProductToMessageMapper {
             category.setParent(getCategory(productCategory.getParent()));
         }
         return category;
+    }
+
+    private static KeProductMessage.KeProductSeller getSeller(KeProduct.ProductData productData) {
+        KeProduct.ProductSeller productSeller = productData.getSeller();
+        if (productSeller != null) {
+            List<KeProductMessage.Contact> contacts = new ArrayList<>();
+            for (KeProduct.Contact contact : productSeller.getContacts()) {
+                KeProductMessage.Contact messageContact = new KeProductMessage.Contact();
+                messageContact.setType(contact.getType());
+                messageContact.setValue(contact.getValue());
+                contacts.add(messageContact);
+            }
+            return KeProductMessage.KeProductSeller.builder()
+                    .accountId(productSeller.getSellerAccountId())
+                    .id(productSeller.getId())
+                    .rating(productSeller.getRating())
+                    .registrationDate(productSeller.getRegistrationDate())
+                    .reviews(productSeller.getReviews())
+                    .sellerLink(productSeller.getLink())
+                    .sellerTitle(productSeller.getTitle())
+                    .orders(productSeller.getOrders())
+                    .contacts(contacts)
+                    .build();
+        }
+        return null;
     }
 }
