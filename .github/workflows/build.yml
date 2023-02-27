@@ -1,0 +1,10 @@
+name: Maven Build Artifact
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    uses: crashteamdev/jvm-workflows/.github/workflows/maven-service-build.yml@v1
