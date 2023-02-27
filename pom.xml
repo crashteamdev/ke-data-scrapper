@@ -12,6 +12,9 @@
     <name>ke-data-scrapper</name>
     <description>ke-data-scrapper</description>
     <properties>
+        <server.port>8022</server.port>
+        <management.port>8023</management.port>
+        <exposed.ports>${server.port} ${management.port}</exposed.ports>
         <java.version>17</java.version>
         <quartz-redis-jobstore.version>1.2.0</quartz-redis-jobstore.version>
         <spring-retry.version>1.2.5.RELEASE</spring-retry.version>
