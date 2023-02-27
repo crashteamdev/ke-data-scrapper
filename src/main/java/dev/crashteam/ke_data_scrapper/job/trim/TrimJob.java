@@ -43,12 +43,12 @@ public class TrimJob implements Job {
             }
 
             if (positionStream != null) {
-                Long trim = streamCommands.xTrim(streamPositionKey.getBytes(StandardCharsets.UTF_8), 0);
+                Long trim = streamCommands.xTrim(streamPositionKey.getBytes(StandardCharsets.UTF_8), 3000);
                 log.info("Deleted - [{}] position messages", trim);
             }
 
             if (productStream != null) {
-                Long trim = streamCommands.xTrim(streamProductKey.getBytes(StandardCharsets.UTF_8), 0);
+                Long trim = streamCommands.xTrim(streamProductKey.getBytes(StandardCharsets.UTF_8), 3000);
                 log.info("Deleted - [{}] product messages", trim);
             }
         } catch (Exception e) {
