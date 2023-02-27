@@ -12,6 +12,7 @@ import org.springframework.data.redis.connection.stream.StreamInfo;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -32,22 +33,27 @@ public class TrimJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        StreamInfo.XInfoStream categoryStream = getStreamInfo(streamCategoryKey);
-        StreamInfo.XInfoStream positionStream = getStreamInfo(streamPositionKey);
-        StreamInfo.XInfoStream productStream = getStreamInfo(streamProductKey);
-        if (categoryStream != null) {
-            Long trim = streamCommands.xTrim(streamCategoryKey.getBytes(StandardCharsets.UTF_8), 0);
-            log.info("Deleted - [{}] category messages", trim);
-        }
+        try {
+            StreamInfo.XInfoStream categoryStream = getStreamInfo(streamCategoryKey);
+            StreamInfo.XInfoStream positionStream = getStreamInfo(streamPositionKey);
+            StreamInfo.XInfoStream productStream = getStreamInfo(streamProductKey);
+            if (categoryStream != null) {
+                Long trim = streamCommands.xTrim(streamCategoryKey.getBytes(StandardCharsets.UTF_8), 0);
+                log.info("Deleted - [{}] category messages", trim);
+            }
 
-        if (positionStream != null) {
-            Long trim = streamCommands.xTrim(streamPositionKey.getBytes(StandardCharsets.UTF_8), 0);
-            log.info("Deleted - [{}] position messages", trim);
-        }
+            if (positionStream != null) {
+                Long trim = streamCommands.xTrim(streamPositionKey.getBytes(StandardCharsets.UTF_8), 0);
+                log.info("Deleted - [{}] position messages", trim);
+            }
 
-        if (productStream != null) {
-            Long trim = streamCommands.xTrim(streamProductKey.getBytes(StandardCharsets.UTF_8), 0);
-            log.info("Deleted - [{}] product messages", trim);
+            if (productStream != null) {
+                Long trim = streamCommands.xTrim(streamProductKey.getBytes(StandardCharsets.UTF_8), 0);
+                log.info("Deleted - [{}] product messages", trim);
+            }
+        } catch (Exception e) {
+            log.error("Trim job failed cause - {}",
+                    Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(e.getMessage()));
         }
     }
 
