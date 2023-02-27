@@ -1,33 +1,39 @@
 package dev.crashteam.ke_data_scrapper.model.dto;
 
-import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Builder
-public class KeProductMessage {
+public class KeProductMessage implements Serializable {
 
     private Long productId;
-    private LocalDateTime time;
+    private Long time;
     private String title;
     private Long totalAvailableAmount;
     private Long orders;
     private Long reviewsAmount;
     private String rating;
+    private String description;
+    private List<String> tags;
+    private List<String> attributes;
     private List<KeItemSku> skuList;
     private KeProductSeller seller;
-    private KeProduct.ProductCategory category;
+    private ProductCategory category;
+    private List<CharacteristicsData> characteristics;
+    private List<ProductPhoto> photos;
+    private boolean isEco;
+    private boolean isPerishable;
 
     @Data
     @Builder
-    public static class KeItemSku {
+    public static class KeItemSku implements Serializable {
         private Long skuId;
         private String photoKey;
-        private KeItemCharacteristic characteristic;
+        private List<KeItemCharacteristic> characteristics;
         private String purchasePrice;
         private String fullPrice;
         private Long availableAmount;
@@ -35,7 +41,7 @@ public class KeProductMessage {
 
     @Data
     @Builder
-    public static class KeItemCharacteristic {
+    public static class KeItemCharacteristic implements Serializable {
         private String type;
         private String title;
         private String value;
@@ -43,7 +49,7 @@ public class KeProductMessage {
 
     @Data
     @Builder
-    public static class KeProductSeller {
+    public static class KeProductSeller implements Serializable {
         private Long id;
         private Long accountId;
         private String sellerLink;
@@ -52,6 +58,41 @@ public class KeProductMessage {
         private Long orders;
         private String rating;
         private Long registrationDate;
+        private String description;
+        private List<Contact> contacts;
     }
 
+    @Data
+    public static class ProductCategory implements Serializable {
+        private Long id;
+        private String title;
+        private Long productAmount;
+        private ProductCategory parent;
+    }
+
+    @Data
+    public static class CharacteristicsData {
+        private Long id;
+        private String title;
+        private List<Characteristic> values;
+    }
+
+    @Data
+    public static class Characteristic {
+        private Long id;
+        private String title;
+        private String value;
+    }
+
+    @Data
+    public static class ProductPhoto {
+        private String color;
+        private String photoKey;
+    }
+
+    @Data
+    public static class Contact {
+        private String type;
+        private String value;
+    }
 }

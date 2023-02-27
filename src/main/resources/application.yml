@@ -6,7 +6,27 @@ spring:
     port: 55000
     password: redispw
 app:
+  job:
+    cron:
+      product-job: 0 0 0,21 ? * * *
+      position-job: 0 0 4 ? * * *
+      category-job: 0 0 1 ? * * *
+      trim-job: 0 0/59 * * * ?
+  stream:
+    product:
+      key: ke-product-stream
+      group: ke-product-group
+    position:
+      key: ke-position-stream
+      group: ke-position-group
+    category:
+      key: ke-category-stream
+      group: ke-category-group
   integration:
     kazan:
       token:
     styx:
+
+loki:
+  host: localhost
+  enabled: false

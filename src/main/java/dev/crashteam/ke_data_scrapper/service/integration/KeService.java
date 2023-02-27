@@ -1,6 +1,7 @@
 package dev.crashteam.ke_data_scrapper.service.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.ke_data_scrapper.exception.CategoryRequestException;
 import dev.crashteam.ke_data_scrapper.model.ProxyRequestParams;
 import dev.crashteam.ke_data_scrapper.model.StyxProxyResult;
 import dev.crashteam.ke_data_scrapper.model.ke.*;
@@ -32,7 +33,7 @@ public class KeService {
     private String authToken;
     private static final String ROOT_URL = "https://api.kazanexpress.ru/api";
 
-    public List<KeCategory.Data> getRootCategory() {
+    public List<KeCategory.Data> getRootCategories() {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
@@ -66,7 +67,7 @@ public class KeService {
         }).getBody();
     }
 
-    public KeCategory.Data getChildCategory(Long id) {
+    public KeCategoryChild getCategoryData(Long id) {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
@@ -80,7 +81,7 @@ public class KeService {
                 .context(Collections.singletonList(headers))
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeCategoryChild>>() {
-        }).getBody().getPayload().getCategory();
+        }).getBody();
     }
 
     @SneakyThrows
@@ -88,7 +89,7 @@ public class KeService {
         log.info("Collecting category id's...");
         Set<Long> ids = new CopyOnWriteArraySet<>();
         List<Callable<Void>> callables = new ArrayList<>();
-        for (KeCategory.Data data : getRootCategory()) {
+        for (KeCategory.Data data : getRootCategories()) {
             callables.add(extractIdsAsync(data, ids));
         }
         List<Future<Void>> futures = callables.stream()
@@ -105,10 +106,31 @@ public class KeService {
         return ids;
     }
 
+    @SneakyThrows
+    public Set<Long> getIdsByMainCategory() {
+        log.info("Collecting category id's...");
+        Set<Long> ids = new HashSet<>();
+        KeCategoryChild categoryData = getCategoryData(1L);
+        if (categoryData.getPayload() != null && categoryData.getPayload().getCategory() != null) {
+            for (KeCategory.Data category : categoryData.getPayload().getCategory().getChildren()) {
+                extractIds(category, ids);
+            }
+        } else {
+            throw new CategoryRequestException("Id collecting failed");
+        }
+        log.info("Collected id's size - {}", ids.size());
+        return ids;
+    }
+
+    private void extractIds(KeCategory.Data data, Set<Long> ids) {
+        ids.add(data.getId());
+        extractChildIds(data, ids);
+    }
+
     private Callable<Void> extractIdsAsync(KeCategory.Data data, Set<Long> ids) {
         return () -> {
             ids.add(data.getId());
-            extractChildIds(getChildCategory(data.getId()), ids);
+            extractChildIds(getCategoryData(data.getId()).getPayload().getCategory(), ids);
             return null;
         };
     }

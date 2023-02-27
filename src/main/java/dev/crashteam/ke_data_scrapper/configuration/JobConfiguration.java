@@ -1,59 +1,76 @@
 package dev.crashteam.ke_data_scrapper.configuration;
 
-import dev.crashteam.ke_data_scrapper.job.CategoryGqlJob;
+import dev.crashteam.ke_data_scrapper.job.category.CategoryJob;
+import dev.crashteam.ke_data_scrapper.job.position.PositionMasterJob;
+import dev.crashteam.ke_data_scrapper.job.product.ProductMasterJob;
+import dev.crashteam.ke_data_scrapper.job.trim.TrimJob;
 import dev.crashteam.ke_data_scrapper.model.Constant;
-import dev.crashteam.ke_data_scrapper.service.integration.KeService;
+import dev.crashteam.ke_data_scrapper.model.job.JobModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.quartz.SimpleTriggerFactoryBean;
 
 import javax.annotation.PostConstruct;
-import java.util.Date;
-
-import static org.quartz.SimpleTrigger.MISFIRE_INSTRUCTION_FIRE_NOW;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class JobConfiguration {
 
-    private final KeService keService;
-    private final ApplicationContext applicationContext;
+    private final Scheduler scheduler;
 
-    @Async
-    //@PostConstruct
-    public void createCategoryJobs() {
-        for (Long categoryId : keService.getIds()) {
-            String jobName = "%s-position-product-job".formatted(categoryId);
-            JobKey jobKey = new JobKey(jobName);
-            JobDetail jobDetail = JobBuilder.newJob(CategoryGqlJob.class)
-                    .withIdentity(jobKey).build();
-            jobDetail.getJobDataMap().put(Constant.CATEGORY_ID_KEY, categoryId);
+    @Value("${app.job.cron.product-job}")
+    private String productJobCron;
 
-            SimpleTriggerFactoryBean factoryBean = new SimpleTriggerFactoryBean();
-            factoryBean.setStartTime(new Date());
-            factoryBean.setStartDelay(0L);
-            factoryBean.setRepeatInterval(10000L);
-            factoryBean.setRepeatCount(0);
-            factoryBean.setName(jobName);
-            factoryBean.setMisfireInstruction(MISFIRE_INSTRUCTION_FIRE_NOW);
-            factoryBean.afterPropertiesSet();
+    @Value("${app.job.cron.position-job}")
+    private String positionJobCron;
 
-            try {
-                Scheduler scheduler = applicationContext.getBean(Scheduler.class);
-                boolean exists = scheduler.checkExists(jobKey);
-                if (exists) continue;
-                scheduler.scheduleJob(jobDetail, factoryBean.getObject());
-            } catch (SchedulerException e) {
-                log.warn("Scheduler exception occurred with message: {}", e.getMessage());
-            } catch (Exception e) {
-                log.error("Failed to start job with exception ", e);
+    @Value("${app.job.cron.category-job}")
+    private String categoryJobCron;
+
+    @Value("${app.job.cron.trim-job}")
+    private String trimJobCron;
+
+    @PostConstruct
+    public void init() {
+        scheduleJob(new JobModel("product-master-job", ProductMasterJob.class, productJobCron,
+               Constant.PRODUCT_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel("position-master-job", PositionMasterJob.class, positionJobCron,
+                Constant.POSITION_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel("category-master-job", CategoryJob.class, categoryJobCron,
+                Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel("trim-job", TrimJob.class, trimJobCron,
+                Constant.TRIM_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+    }
+
+    private void scheduleJob(JobModel jobModel) {
+        try {
+            JobDetail jobDetail = getJobDetail(jobModel.getJobName(), jobModel.getJobClass());
+            scheduler.addJob(jobDetail, true, true);
+            if (!scheduler.checkExists(TriggerKey.triggerKey(jobModel.getTriggerName(), jobModel.getTriggerGroup()))) {
+                scheduler.scheduleJob(getJobTrigger(jobDetail, jobModel.getCron(), jobModel.getTriggerName(),  jobModel.getTriggerGroup()));
+                log.info("Scheduled - {} with cron - {}", jobModel.getJobName(), jobModel.getCron());
             }
+        } catch (SchedulerException e) {
+            log.warn("Scheduler exception occurred with message: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to start job with exception ", e);
         }
     }
-}
 
+    private JobDetail getJobDetail(String jobName, Class<? extends Job> jobClass) {
+        JobKey jobKey = new JobKey(jobName);
+        return JobBuilder.newJob(jobClass)
+                .withIdentity(jobKey).build();
+    }
+
+    private CronTrigger getJobTrigger(JobDetail jobDetail, String cron, String name, String group) {
+        return TriggerBuilder
+                .newTrigger()
+                .withSchedule(CronScheduleBuilder.cronSchedule(cron))
+                .withIdentity(TriggerKey.triggerKey(name, group))
+                .forJob(jobDetail).build();
+    }
+}

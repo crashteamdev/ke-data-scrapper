@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
@@ -37,10 +38,13 @@ public class KeProduct {
         private List<SkuData> skuList;
         private ProductSeller seller;
         private Feedback topFeedback;
+        private boolean isEco;
+        private boolean isPerishable;
+
     }
 
     @Data
-    public static class ProductCategory {
+    public static class ProductCategory implements Serializable {
         private Long id;
         private String title;
         private Long productAmount;
@@ -49,6 +53,7 @@ public class KeProduct {
 
     @Data
     public static class ProductPhoto {
+        private String color;
         private String photoKey;
     }
 
@@ -80,8 +85,8 @@ public class KeProduct {
 
     @Data
     public static class ScuCharacteristic {
-        private Long charIndex;
-        private Long valueIndex;
+        private Integer charIndex;
+        private Integer valueIndex;
     }
 
     @Data
@@ -95,6 +100,7 @@ public class KeProduct {
         private Long reviews;
         private Long orders;
         private Long sellerAccountId;
+        private List<Contact> contacts;
     }
 
     @Data
@@ -125,5 +131,11 @@ public class KeProduct {
         private String code;
         private String message;
         private String detailMessage;
+    }
+
+    @Data
+    public static class Contact {
+        private String type;
+        private String value;
     }
 }

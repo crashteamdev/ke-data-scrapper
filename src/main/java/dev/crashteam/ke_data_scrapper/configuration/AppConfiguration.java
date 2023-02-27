@@ -1,5 +1,6 @@
 package dev.crashteam.ke_data_scrapper.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.annotation.EnableRetry;
@@ -20,16 +21,21 @@ public class AppConfiguration {
     }
 
     @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper().findAndRegisterModules();
+    }
+
+    @Bean
     public RetryTemplate retryTemplate() {
         RetryTemplate retryTemplate = new RetryTemplate();
 
         Random randomTimeout = new Random();
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(randomTimeout.nextLong(50L, 600L));
+        fixedBackOffPolicy.setBackOffPeriod(randomTimeout.nextLong(10000L, 15000L));
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(2);
+        retryPolicy.setMaxAttempts(10);
         retryTemplate.setRetryPolicy(retryPolicy);
 
         return retryTemplate;
