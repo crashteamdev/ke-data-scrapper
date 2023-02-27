@@ -63,6 +63,13 @@
             <artifactId>spring-aspects</artifactId>
             <version>${spring-aspects.version}</version>
         </dependency>
+
+        <!-- CrashTeam -->
+        <dependency>
+            <groupId>dev.crashteam</groupId>
+            <artifactId>shared-resources</artifactId>
+            <version>${shared-resources.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
