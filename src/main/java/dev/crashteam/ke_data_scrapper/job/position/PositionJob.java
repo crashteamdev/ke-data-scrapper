@@ -12,6 +12,7 @@ import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -39,6 +40,9 @@ public class PositionJob implements Job {
 
     @Value("${app.stream.position.key}")
     public String streamKey;
+
+    @Value("${app.stream.maxlen}")
+    public Long maxlen;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -114,9 +118,9 @@ public class PositionJob implements Job {
                                     .categoryId(categoryId)
                                     .time(Instant.now().toEpochMilli())
                                     .build();
-                            RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
+                            RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                                     Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
-                                            objectMapper.writeValueAsBytes(positionMessage)));
+                                            objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
                             log.info("Posted [stream={}] position record with id - [{}]",
                                     streamKey, recordId);
                         }
@@ -135,9 +139,9 @@ public class PositionJob implements Job {
                                     .categoryId(categoryId)
                                     .time(Instant.now().toEpochMilli())
                                     .build();
-                            RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
+                            RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                                     Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
-                                            objectMapper.writeValueAsBytes(positionMessage)));
+                                            objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
                             log.info("Posted [stream={}] position record with id - [{}]",
                                     streamKey, recordId);
                         }

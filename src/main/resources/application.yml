@@ -11,8 +11,9 @@ app:
       product-job: 0 0 0,21 ? * * *
       position-job: 0 0 4 ? * * *
       category-job: 0 0 1 ? * * *
-      trim-job: 0 0/59 * * * ?
+      trim-job: 0 0/60 * * * ?
   stream:
+    maxlen: 3000
     product:
       key: ke-product-stream
       group: ke-product-group

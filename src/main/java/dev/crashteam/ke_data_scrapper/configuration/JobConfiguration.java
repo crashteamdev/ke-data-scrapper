@@ -41,8 +41,6 @@ public class JobConfiguration {
                 Constant.POSITION_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
         scheduleJob(new JobModel("category-master-job", CategoryJob.class, categoryJobCron,
                 Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
-        scheduleJob(new JobModel("trim-job", TrimJob.class, trimJobCron,
-                Constant.TRIM_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
     }
 
     private void scheduleJob(JobModel jobModel) {

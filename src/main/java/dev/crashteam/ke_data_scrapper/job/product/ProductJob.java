@@ -14,6 +14,7 @@ import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -40,6 +41,9 @@ public class ProductJob implements Job {
 
     @Value("${app.stream.product.key}")
     public String streamKey;
+
+    @Value("${app.stream.maxlen}")
+    public Long maxlen;
 
     @Override
     @SneakyThrows
@@ -71,8 +75,10 @@ public class ProductJob implements Job {
                         continue;
                     }
                     KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
-                    RecordId recordId = streamCommands.xAdd(streamKey.getBytes(StandardCharsets.UTF_8),
-                            Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8), objectMapper.writeValueAsBytes(productMessage)));
+
+                    RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
+                            Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8),
+                                    objectMapper.writeValueAsBytes(productMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
                     log.info("Posted product record with id - {}", recordId);
                 }
                 offset.addAndGet(limit);
