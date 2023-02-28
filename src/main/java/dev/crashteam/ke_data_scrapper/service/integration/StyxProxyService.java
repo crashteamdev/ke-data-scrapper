@@ -23,6 +23,6 @@ public class StyxProxyService {
 
     public <T> T getProxyResult(ProxyRequestParams body, ParameterizedTypeReference<T> typeReference) {
         HttpEntity<ProxyRequestParams> request = new HttpEntity<>(body);
-        return restTemplate.exchange(styxUrl, HttpMethod.POST, request, typeReference).getBody();
+        return restTemplate.exchange(styxUrl + "/v2/proxy", HttpMethod.POST, request, typeReference).getBody();
     }
 }
