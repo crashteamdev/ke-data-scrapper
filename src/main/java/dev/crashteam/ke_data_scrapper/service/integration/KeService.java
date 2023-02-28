@@ -31,6 +31,10 @@ public class KeService {
 
     @Value("${app.integration.kazan.token}")
     private String authToken;
+
+    @Value("${app.integration.timeout}")
+    private Long timeout;
+
     private static final String ROOT_URL = "https://api.kazanexpress.ru/api";
 
     public List<KeCategory.Data> getRootCategories() {
@@ -40,7 +44,7 @@ public class KeService {
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(50L, 600L))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
@@ -58,7 +62,7 @@ public class KeService {
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(50L, 600L))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url(ROOT_URL + "/v2/product/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
@@ -75,7 +79,7 @@ public class KeService {
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(50L, 600L))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url(ROOT_URL + "/category/v2/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
@@ -169,7 +173,7 @@ public class KeService {
                 .build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(50L, 600L))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url("https://dshop.kznexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
                 .context(List.of(headers, content))

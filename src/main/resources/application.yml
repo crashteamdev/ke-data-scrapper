@@ -24,6 +24,7 @@ app:
       key: ke-category-stream
       group: ke-category-group
   integration:
+    timeout: 600
     kazan:
       token:
     styx:
