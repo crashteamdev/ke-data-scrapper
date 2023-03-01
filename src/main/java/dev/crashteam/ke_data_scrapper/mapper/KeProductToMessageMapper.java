@@ -30,14 +30,6 @@ public class KeProductToMessageMapper {
             characteristicsData.add(messageCharacteristic);
         }
 
-        List<KeProductMessage.ProductPhoto> photos = new ArrayList<>();
-        for (KeProduct.ProductPhoto dataPhoto : productData.getPhotos()) {
-            KeProductMessage.ProductPhoto photo = new KeProductMessage.ProductPhoto();
-            photo.setPhotoKey(dataPhoto.getPhotoKey());
-            photo.setColor(dataPhoto.getColor());
-            photos.add(photo);
-        }
-
         List<KeProductMessage.KeItemSku> skuList = productData.getSkuList()
                 .stream()
                 .map(sku -> {
@@ -92,7 +84,6 @@ public class KeProductToMessageMapper {
                 .seller(getSeller(productData))
                 .skuList(skuList)
                 .characteristics(characteristicsData)
-                .photos(photos)
                 .isEco(productData.isEco())
                 .isPerishable(productData.isPerishable())
                 .build();

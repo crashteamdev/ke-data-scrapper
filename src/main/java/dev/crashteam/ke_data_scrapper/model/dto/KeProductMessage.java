@@ -24,7 +24,6 @@ public class KeProductMessage implements Serializable {
     private KeProductSeller seller;
     private ProductCategory category;
     private List<CharacteristicsData> characteristics;
-    private List<ProductPhoto> photos;
     private boolean isEco;
     private boolean isPerishable;
 
