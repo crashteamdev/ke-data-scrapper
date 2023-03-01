@@ -85,7 +85,7 @@ public class KeProductToMessageMapper {
                 .skuList(skuList)
                 .characteristics(characteristicsData)
                 .isEco(productData.isEco())
-                .isPerishable(productData.isPerishable())
+                .isAdult(productData.isAdultCategory())
                 .build();
 
     }

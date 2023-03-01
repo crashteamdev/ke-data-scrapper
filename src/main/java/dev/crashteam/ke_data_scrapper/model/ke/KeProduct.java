@@ -39,7 +39,7 @@ public class KeProduct {
         private ProductSeller seller;
         private Feedback topFeedback;
         private boolean isEco;
-        private boolean isPerishable;
+        private boolean adultCategory;
 
     }
 
