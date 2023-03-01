@@ -1,5 +1,6 @@
 package dev.crashteam.ke_data_scrapper.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,7 +25,9 @@ public class KeProductMessage implements Serializable {
     private KeProductSeller seller;
     private ProductCategory category;
     private List<CharacteristicsData> characteristics;
+    @JsonProperty("isEco")
     private boolean isEco;
+    @JsonProperty("isAdult")
     private boolean isAdult;
 
     @Data
