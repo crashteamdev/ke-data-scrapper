@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class KeProductToMessageMapper {
@@ -29,7 +30,7 @@ public class KeProductToMessageMapper {
             messageCharacteristic.setValues(characteristicsValues);
             characteristicsData.add(messageCharacteristic);
         }
-
+        AtomicBoolean isCorrupted = new AtomicBoolean(false);
         List<KeProductMessage.KeItemSku> skuList = productData.getSkuList()
                 .stream()
                 .map(sku -> {
@@ -57,8 +58,14 @@ public class KeProductToMessageMapper {
                                         .filter(photo -> photo.getColor().equals(value))
                                         .findFirst()
                                         .orElse(null);
-                            }).filter(Objects::nonNull).findFirst().orElse(productData.getPhotos()
+                            })
+                            .filter(Objects::nonNull)
+                            .findFirst()
+                            .orElse(productData.getPhotos()
                                     .stream().findFirst().orElse(null));
+                    if (productPhoto == null) {
+                        isCorrupted.set(true);
+                    }
                     return KeProductMessage.KeItemSku.builder()
                             .skuId(sku.getId())
                             .availableAmount(sku.getAvailableAmount())
@@ -86,6 +93,7 @@ public class KeProductToMessageMapper {
                 .characteristics(characteristicsData)
                 .isEco(productData.isEco())
                 .isAdult(productData.isAdultCategory())
+                .isCorrupted(isCorrupted.get())
                 .build();
 
     }

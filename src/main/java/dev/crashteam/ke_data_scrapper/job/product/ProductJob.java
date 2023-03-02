@@ -74,7 +74,12 @@ public class ProductJob implements Job {
                         log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));
                         continue;
                     }
+
                     KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
+                    if (productMessage.isCorrupted()) {
+                        log.warn("Product with id - {} is corrupted", productMessage.getProductId());
+                        continue;
+                    }
 
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8),
