@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
+import java.util.TimeZone;
 
 @Slf4j
 @Configuration
@@ -67,7 +68,7 @@ public class JobConfiguration {
     private CronTrigger getJobTrigger(JobDetail jobDetail, String cron, String name, String group) {
         return TriggerBuilder
                 .newTrigger()
-                .withSchedule(CronScheduleBuilder.cronSchedule(cron))
+                .withSchedule(CronScheduleBuilder.cronSchedule(cron).inTimeZone(TimeZone.getTimeZone("UTC")))
                 .withIdentity(TriggerKey.triggerKey(name, group))
                 .forJob(jobDetail).build();
     }

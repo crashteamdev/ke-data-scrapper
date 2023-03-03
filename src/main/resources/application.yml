@@ -5,6 +5,16 @@ spring:
     host: 0.0.0.0
     port: 55000
     password: redispw
+  quartz:
+    properties:
+      org:
+        quartz:
+          jobStore:
+            misfireThreshold: 60000
+            class: net.joelinn.quartz.jobstore.RedisJobStore
+            host: 0.0.0.0
+            port: 55000
+            password: redispw
 app:
   job:
     cron:
@@ -13,16 +23,18 @@ app:
       category-job: 0 0 1 ? * * *
       trim-job: 0 0/60 * * * ?
   stream:
-    maxlen: 50000
     product:
       key: ke-product-stream
       group: ke-product-group
+      maxlen: 50000
     position:
       key: ke-position-stream
       group: ke-position-group
+      maxlen: 50000
     category:
       key: ke-category-stream
       group: ke-category-group
+      maxlen: 50000
   integration:
     timeout: 600
     kazan:

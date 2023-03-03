@@ -41,13 +41,13 @@ public class PositionJob implements Job {
     @Value("${app.stream.position.key}")
     public String streamKey;
 
-    @Value("${app.stream.maxlen}")
+    @Value("${app.stream.position.maxlen}")
     public Long maxlen;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
-        Long categoryId = (Long) jobDetail.getJobDataMap().get(Constant.POSITION_CATEGORY_KEY);
+        Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.POSITION_CATEGORY_KEY).toString());
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         log.info("Starting position job with category id - {}", categoryId);
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
@@ -60,8 +60,16 @@ public class PositionJob implements Job {
                     break;
                 }
                 var productItems = Optional.ofNullable(gqlResponse.getData()
-                        .getMakeSearch()).map(KeGQLResponse.MakeSearch::getItems)
-                        .orElseThrow(() -> new KeGqlRequestException("Item's can't be null!"));
+                        .getMakeSearch())
+                        .map(KeGQLResponse.MakeSearch::getItems)
+                        .filter(it -> !CollectionUtils.isEmpty(it))
+                        .orElse(Collections.emptyList());
+                if (CollectionUtils.isEmpty(productItems)) {
+                    log.warn("Skipping position job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+                    offset.addAndGet(limit);
+                    jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
+                    continue;
+                }
                 log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
 
                 for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {

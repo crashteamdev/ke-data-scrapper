@@ -1,7 +1,6 @@
 package dev.crashteam.ke_data_scrapper.job.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
@@ -42,14 +41,14 @@ public class ProductJob implements Job {
     @Value("${app.stream.product.key}")
     public String streamKey;
 
-    @Value("${app.stream.maxlen}")
+    @Value("${app.stream.product.maxlen}")
     public Long maxlen;
 
     @Override
     @SneakyThrows
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
-        Long categoryId = (Long) jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY);
+        Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY).toString());
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         log.info("Starting job with category id - {}", categoryId);
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
@@ -61,17 +60,30 @@ public class ProductJob implements Job {
                     break;
                 }
                 var productItems = Optional.ofNullable(gqlResponse.getData()
-                        .getMakeSearch()).map(KeGQLResponse.MakeSearch::getItems)
-                        .orElseThrow(() -> new KeGqlRequestException("Item's can't be null!"));
+                        .getMakeSearch())
+                        .map(KeGQLResponse.MakeSearch::getItems)
+                        .filter(it -> !CollectionUtils.isEmpty(it))
+                        .orElse(Collections.emptyList());
+                if (CollectionUtils.isEmpty(productItems)) {
+                    log.warn("Skipping product job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+                    offset.addAndGet(limit);
+                    jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
+                    continue;
+                }
                 log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
 
                 for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                    Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId)
-                            .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
+                    Long itemId = Optional.ofNullable(productItem.getCatalogCard())
+                            .map(KeGQLResponse.CatalogCard::getProductId)
+                            .orElse(null);
+                    if (itemId == null) {
+                        log.warn("Product id is null continue with next item, if it exists...");
+                        continue;
+                    }
                     KeProduct.ProductData productData = jobUtilService.getProductData(itemId);
 
                     if (productData == null) {
-                        log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));
+                        log.warn("Product data with id - {} returned null, continue with next item, if it exists...", itemId);
                         continue;
                     }
 
