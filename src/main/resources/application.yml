@@ -9,6 +9,9 @@ spring:
     properties:
       org:
         quartz:
+          threadPool:
+            threadCount: 30
+            class: org.quartz.simpl.SimpleThreadPool
           jobStore:
             misfireThreshold: 60000
             class: net.joelinn.quartz.jobstore.RedisJobStore
