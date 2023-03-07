@@ -12,4 +12,8 @@ public class Constant {
     public static final String POSITION_JOB_NAME = "%s-position-job";
     public static final String PRODUCT_JOB_NAME = "%s-product-job";
 
+    public static final String PRODUCT_MASTER_JOB_NAME = "product-master-job";
+    public static final String POSITION_MASTER_JOB_NAME = "position-master-job";
+    public static final String CATEGORY_MASTER_JOB_NAME = "category-master-job";
+
 }

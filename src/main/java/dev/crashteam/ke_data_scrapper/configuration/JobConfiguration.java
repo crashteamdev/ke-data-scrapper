@@ -3,7 +3,6 @@ package dev.crashteam.ke_data_scrapper.configuration;
 import dev.crashteam.ke_data_scrapper.job.category.CategoryJob;
 import dev.crashteam.ke_data_scrapper.job.position.PositionMasterJob;
 import dev.crashteam.ke_data_scrapper.job.product.ProductMasterJob;
-import dev.crashteam.ke_data_scrapper.job.trim.TrimJob;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.job.JobModel;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +35,11 @@ public class JobConfiguration {
 
     @PostConstruct
     public void init() {
-        scheduleJob(new JobModel("product-master-job", ProductMasterJob.class, productJobCron,
+        scheduleJob(new JobModel(Constant.PRODUCT_MASTER_JOB_NAME, ProductMasterJob.class, productJobCron,
                Constant.PRODUCT_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
-        scheduleJob(new JobModel("position-master-job", PositionMasterJob.class, positionJobCron,
+        scheduleJob(new JobModel(Constant.POSITION_MASTER_JOB_NAME, PositionMasterJob.class, positionJobCron,
                 Constant.POSITION_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
-        scheduleJob(new JobModel("category-master-job", CategoryJob.class, categoryJobCron,
+        scheduleJob(new JobModel(Constant.CATEGORY_MASTER_JOB_NAME, CategoryJob.class, categoryJobCron,
                 Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
     }
 
@@ -49,7 +48,7 @@ public class JobConfiguration {
             JobDetail jobDetail = getJobDetail(jobModel.getJobName(), jobModel.getJobClass());
             scheduler.addJob(jobDetail, true, true);
             if (!scheduler.checkExists(TriggerKey.triggerKey(jobModel.getTriggerName(), jobModel.getTriggerGroup()))) {
-                scheduler.scheduleJob(getJobTrigger(jobDetail, jobModel.getCron(), jobModel.getTriggerName(),  jobModel.getTriggerGroup()));
+                scheduler.scheduleJob(getJobTrigger(jobDetail, jobModel.getCron(), jobModel.getTriggerName(), jobModel.getTriggerGroup()));
                 log.info("Scheduled - {} with cron - {}", jobModel.getJobName(), jobModel.getCron());
             }
         } catch (SchedulerException e) {
@@ -68,7 +67,10 @@ public class JobConfiguration {
     private CronTrigger getJobTrigger(JobDetail jobDetail, String cron, String name, String group) {
         return TriggerBuilder
                 .newTrigger()
-                .withSchedule(CronScheduleBuilder.cronSchedule(cron).inTimeZone(TimeZone.getTimeZone("UTC")))
+                .withSchedule(CronScheduleBuilder
+                        .cronSchedule(cron)
+                        .withMisfireHandlingInstructionFireAndProceed()
+                        .inTimeZone(TimeZone.getTimeZone("UTC")))
                 .withIdentity(TriggerKey.triggerKey(name, group))
                 .forJob(jobDetail).build();
     }
