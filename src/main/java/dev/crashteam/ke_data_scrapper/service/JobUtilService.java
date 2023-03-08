@@ -45,7 +45,7 @@ public class JobUtilService {
             if (!CollectionUtils.isEmpty(response.getErrors())) {
                 for (KeGQLResponse.GQLError error : response.getErrors()) {
                     if (error.getMessage().contains("offset")) {
-                        log.info("Finished collecting data for id - {}, " +
+                        log.warn("Finished collecting data for id - {}, " +
                                 "because of response error object with message - {}", categoryId, error.getMessage());
                         return null;
                     } else {
