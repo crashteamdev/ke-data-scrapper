@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +54,7 @@ public class PositionJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.POSITION_CATEGORY_KEY).toString());
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
@@ -100,6 +102,9 @@ public class PositionJob implements Job {
                 break;
             }
         }
+        Instant end = Instant.now();
+        log.info("Position job - Finished collecting for category id - {}, in {} seconds", categoryId,
+                Duration.between(start, end).toSeconds());
     }
 
     private Callable<Void> postPositionRecord(KeGQLResponse.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {

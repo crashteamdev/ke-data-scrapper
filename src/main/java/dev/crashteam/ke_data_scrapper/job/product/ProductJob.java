@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +57,7 @@ public class ProductJob implements Job {
     @Override
     @SneakyThrows
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY).toString());
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
@@ -101,6 +104,9 @@ public class ProductJob implements Job {
                 break;
             }
         }
+        Instant end = Instant.now();
+        log.info("Product job - Finished collecting for category id - {}, in {} seconds", categoryId,
+                Duration.between(start, end).toSeconds());
     }
 
     @SneakyThrows
@@ -129,7 +135,7 @@ public class ProductJob implements Job {
             RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                     Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8),
                             objectMapper.writeValueAsBytes(productMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-            log.info("Posted product record with id - {}", recordId);
+            log.info("Posted product record [stream={}] with id - {}", streamKey, recordId);
             return null;
         };
     }
