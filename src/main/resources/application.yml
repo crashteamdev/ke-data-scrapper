@@ -14,11 +14,12 @@ spring:
             class: org.quartz.simpl.SimpleThreadPool
           jobStore:
             misfireThreshold: 60000
-            class: net.joelinn.quartz.jobstore.RedisJobStore
-            host: 0.0.0.0
-            port: 55000
-            password: redispw
-            ssl: true
+            class: org.quartz.simpl.RAMJobStore
+#            class: net.joelinn.quartz.jobstore.RedisJobStore
+#            host: 0.0.0.0
+#            port: 55000
+#            password: redispw
+#            ssl: true
 app:
   job:
     cron:
