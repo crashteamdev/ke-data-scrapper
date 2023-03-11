@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Component
 @DisallowConcurrentExecution
-@RequiredArgsConstructor
 public class ProductJob implements Job {
 
     @Autowired
@@ -46,7 +45,8 @@ public class ProductJob implements Job {
     @Autowired
     ObjectMapper objectMapper;
 
-    private final ThreadPoolTaskExecutor taskExecutor;
+    @Autowired
+    ThreadPoolTaskExecutor jobExecutor;
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -85,10 +85,10 @@ public class ProductJob implements Job {
 
                 List<Callable<Void>> callables = new ArrayList<>();
                 for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                    callables.add(postProductRecord(productItem));
+                    callables.add(postProductRecord(productItem, categoryId));
                 }
                 callables.stream()
-                        .map(taskExecutor::submit)
+                        .map(jobExecutor::submit)
                         .toList()
                         .forEach(voidFuture -> {
                             try {
@@ -110,7 +110,7 @@ public class ProductJob implements Job {
     }
 
     @SneakyThrows
-    private Callable<Void> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem) {
+    private Callable<Void> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
         return () -> {
             Long itemId = Optional.ofNullable(productItem.getCatalogCard())
                     .map(KeGQLResponse.CatalogCard::getProductId)
@@ -135,7 +135,7 @@ public class ProductJob implements Job {
             RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                     Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8),
                             objectMapper.writeValueAsBytes(productMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-            log.info("Posted product record [stream={}] with id - {}", streamKey, recordId);
+            log.info("Posted product record [stream={}] with id - {}, for category id - [{}]", streamKey, recordId, categoryId);
             return null;
         };
     }

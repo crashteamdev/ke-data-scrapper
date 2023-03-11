@@ -44,7 +44,8 @@ public class PositionJob implements Job {
     @Autowired
     ObjectMapper objectMapper;
 
-    private final ThreadPoolTaskExecutor taskExecutor;
+    @Autowired
+    ThreadPoolTaskExecutor jobExecutor;
 
     @Value("${app.stream.position.key}")
     public String streamKey;
@@ -85,7 +86,7 @@ public class PositionJob implements Job {
                     callables.add(postPositionRecord(productItem, position, categoryId));
                 }
                 callables.stream()
-                        .map(taskExecutor::submit)
+                        .map(jobExecutor::submit)
                         .toList()
                         .forEach(voidFuture -> {
                             try {
@@ -165,8 +166,8 @@ public class PositionJob implements Job {
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                     objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-                    log.info("Posted [stream={}] position record with id - [{}]",
-                            streamKey, recordId);
+                    log.info("Posted [stream={}] position record with id - [{}] for category id - [{}]",
+                            streamKey, recordId, categoryId);
                 }
             } else {
                 List<Long> skuIds = productResponse.getSkuList()
@@ -186,8 +187,8 @@ public class PositionJob implements Job {
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                     objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-                    log.info("Posted [stream={}] position record with id - [{}]",
-                            streamKey, recordId);
+                    log.info("Posted [stream={}] position record with id - [{}], for category id - [{}]",
+                            streamKey, recordId, categoryId);
                 }
             }
             return null;
