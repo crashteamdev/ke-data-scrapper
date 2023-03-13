@@ -20,7 +20,7 @@ public class SimpleTriggerJobCreatorService {
     private final Scheduler scheduler;
 
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass) {
-        for (Long categoryId : keService.getIds()) {
+        for (Long categoryId : keService.getIdsByMainCategory()) {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);
             JobDetail jobDetail = JobBuilder.newJob(jobClass)

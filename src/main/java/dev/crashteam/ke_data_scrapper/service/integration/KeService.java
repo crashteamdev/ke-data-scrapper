@@ -126,9 +126,16 @@ public class KeService {
         return ids;
     }
 
-    private void extractIds(KeCategory.Data data, Set<Long> ids) {
+    private void extractALlIds(KeCategory.Data data, Set<Long> ids) {
         ids.add(data.getId());
         extractChildIds(data, ids);
+    }
+
+    private void extractIds(KeCategory.Data data, Set<Long> ids) {
+        ids.add(data.getId());
+        for (KeCategory.Data child : data.getChildren()) {
+            ids.add(child.getId());
+        }
     }
 
     private Callable<Void> extractIdsAsync(KeCategory.Data data, Set<Long> ids) {

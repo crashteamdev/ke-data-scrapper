@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Component
 @DisallowConcurrentExecution
+@RequiredArgsConstructor
 public class ProductJob implements Job {
 
     @Autowired
@@ -45,8 +46,7 @@ public class ProductJob implements Job {
     @Autowired
     ObjectMapper objectMapper;
 
-    @Autowired
-    ThreadPoolTaskExecutor jobExecutor;
+    private final ThreadPoolTaskExecutor jobExecutor;
 
     @Value("${app.stream.product.key}")
     public String streamKey;
