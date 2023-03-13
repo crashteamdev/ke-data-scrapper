@@ -37,6 +37,7 @@ public class JobConfiguration {
     @Value("${app.job.cron.position-product-job}")
     private String positionProductJobCron;
 
+    @PostConstruct
     public void init() {
         scheduleJob(new JobModel(Constant.PRODUCT_MASTER_JOB_NAME, ProductMasterJob.class, productJobCron,
                 Constant.PRODUCT_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
