@@ -46,7 +46,8 @@ public class ProductJob implements Job {
     @Autowired
     ObjectMapper objectMapper;
 
-    private final ThreadPoolTaskExecutor jobExecutor;
+    @Autowired
+    ThreadPoolTaskExecutor jobExecutor;
 
     @Value("${app.stream.product.key}")
     public String streamKey;

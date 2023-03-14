@@ -1,23 +1,21 @@
 package dev.crashteam.ke_data_scrapper.configuration;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.AsyncConfigurer;
+import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.Executor;
-
 @Configuration
 @EnableAsync
-public class AsyncConfig implements AsyncConfigurer {
+public class AsyncConfig {
 
-    @Override
-    public Executor getAsyncExecutor() {
-        int processors = Runtime.getRuntime().availableProcessors();
+    @Bean
+    @Scope("prototype")
+    public ThreadPoolTaskExecutor jobExecutor() {
         final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        int threads = processors * (1 + 5000 / 500);
-        executor.setCorePoolSize(threads / 2);
-        executor.setMaxPoolSize(threads);
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("data-executor-");
         executor.initialize();
