@@ -8,6 +8,8 @@ import org.springframework.scheduling.quartz.SimpleTriggerFactoryBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.quartz.SimpleTrigger.MISFIRE_INSTRUCTION_FIRE_NOW;
 
@@ -19,8 +21,14 @@ public class SimpleTriggerJobCreatorService {
     private final KeService keService;
     private final Scheduler scheduler;
 
-    public void createJob(String jobName, String idKey, Class<? extends Job> jobClass) {
-        for (Long categoryId : keService.getIdsByMainCategory()) {
+    public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
+        Set<Long> ids;
+        if (allIds) {
+            ids = keService.getIds();
+        } else {
+            ids = keService.getIdsByMainCategory();
+        }
+        for (Long categoryId : ids) {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);
             JobDetail jobDetail = JobBuilder.newJob(jobClass)

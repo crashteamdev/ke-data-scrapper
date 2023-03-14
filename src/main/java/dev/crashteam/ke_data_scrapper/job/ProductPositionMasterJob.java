@@ -18,6 +18,6 @@ public class ProductPositionMasterJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        creatorService.createJob(Constant.PRODUCT_POSITION_JOB_NAME, Constant.PRODUCT_POSITION_KEY, PositionProductJob.class);
+        creatorService.createJob(Constant.PRODUCT_POSITION_JOB_NAME, Constant.PRODUCT_POSITION_KEY, PositionProductJob.class, true);
     }
 }
