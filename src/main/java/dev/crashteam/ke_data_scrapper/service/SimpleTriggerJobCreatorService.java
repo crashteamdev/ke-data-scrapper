@@ -8,7 +8,6 @@ import org.springframework.scheduling.quartz.SimpleTriggerFactoryBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 
 import static org.quartz.SimpleTrigger.MISFIRE_INSTRUCTION_FIRE_NOW;
