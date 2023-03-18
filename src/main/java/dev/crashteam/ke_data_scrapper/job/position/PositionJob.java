@@ -80,8 +80,13 @@ public class PositionJob implements Job {
                 log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
                 for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
                     position.incrementAndGet();
-                    Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId)
-                            .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
+                    Long itemId = Optional.ofNullable(productItem.getCatalogCard())
+                            .map(KeGQLResponse.CatalogCard::getProductId)
+                            .orElse(null);
+                    if (itemId == null) {
+                        log.warn("Product id is null continue with next item, if it exists...");
+                        continue;
+                    }
                     KeGQLResponse.CatalogCard productItemCard = productItem.getCatalogCard();
                     List<KeGQLResponse.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
                     KeProduct.ProductData productResponse = jobUtilService.getProductData(itemId);
@@ -135,8 +140,8 @@ public class PositionJob implements Job {
                             RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                                     Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                             objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-                            log.info("Posted [stream={}] position record with id - [{}] for category id - [{}]",
-                                    streamKey, recordId, categoryId);
+                            log.info("Posted [stream={}] position record with id - [{}] for category id - [{}], product id - [{}]",
+                                    streamKey, recordId, categoryId, itemId);
                         }
                     } else {
                         List<Long> skuIds = productResponse.getSkuList()
@@ -156,8 +161,8 @@ public class PositionJob implements Job {
                             RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                                     Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                             objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-                            log.info("Posted [stream={}] position record with id - [{}], for category id - [{}]",
-                                    streamKey, recordId, categoryId);
+                            log.info("Posted [stream={}] position record with id - [{}], for category id - [{}], product id - [{}]",
+                                    streamKey, recordId, categoryId, itemId);
                         }
                     }
                 }

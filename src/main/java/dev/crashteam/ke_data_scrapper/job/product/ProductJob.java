@@ -136,7 +136,8 @@ public class ProductJob implements Job {
             RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                     Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8),
                             objectMapper.writeValueAsBytes(productMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-            log.info("Posted product record [stream={}] with id - {}, for category id - [{}]", streamKey, recordId, categoryId);
+            log.info("Posted product record [stream={}] with id - {}, for category id - [{}], product id - [{}]", streamKey,
+                    recordId, categoryId, itemId);
             return null;
         };
     }
