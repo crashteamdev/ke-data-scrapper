@@ -1,7 +1,9 @@
 package dev.crashteam.ke_data_scrapper.service;
 
-@FunctionalInterface
-public interface MessagePublisher {
+import dev.crashteam.ke_data_scrapper.model.stream.Message;
 
-    void publish(String topic, Object message);
+@FunctionalInterface
+public interface MessagePublisher<T extends Message> {
+
+    Object publish(T message);
 }
