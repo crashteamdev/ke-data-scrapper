@@ -16,7 +16,7 @@ public class AsyncConfig implements AsyncConfigurer {
         int processors = Runtime.getRuntime().availableProcessors();
         final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         int threads = processors * (1 + 5000 / 500);
-        executor.setCorePoolSize(threads / 2);
+        executor.setCorePoolSize(threads);
         executor.setMaxPoolSize(threads);
         executor.setThreadNamePrefix("data-executor-");
         executor.initialize();
