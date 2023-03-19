@@ -17,13 +17,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -44,6 +48,8 @@ public class ProductJob implements Job {
 
     @Autowired
     RedisStreamMessagePublisher messagePublisher;
+
+    private final ThreadPoolTaskExecutor jobExecutor;
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -83,31 +89,20 @@ public class ProductJob implements Job {
                 }
                 log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
 
+                List<Callable<Void>> callables = new ArrayList<>();
                 for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                    Long itemId = Optional.ofNullable(productItem.getCatalogCard())
-                            .map(KeGQLResponse.CatalogCard::getProductId)
-                            .orElse(null);
-                    if (itemId == null) {
-                        log.warn("Product id is null continue with next item, if it exists...");
-                        continue;
-                    }
-                    KeProduct.ProductData productData = jobUtilService.getProductData(itemId);
-
-                    if (productData == null) {
-                        log.warn("Product data with id - {} returned null, continue with next item, if it exists...", itemId);
-                        continue;
-                    }
-
-                    KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
-                    if (productMessage.isCorrupted()) {
-                        log.warn("Product with id - {} is corrupted", productMessage.getProductId());
-                        continue;
-                    }
-                    RecordId recordId = messagePublisher
-                            .publish(new RedisStreamMessage(streamKey, productMessage, maxlen, "item", waitPending));
-                    log.info("Posted product record [stream={}] with id - {}, for category id - [{}], product id - [{}]", streamKey,
-                            recordId, categoryId, itemId);
+                    callables.add(postProductRecord(productItem, categoryId));
                 }
+                callables.stream()
+                        .map(jobExecutor::submit)
+                        .toList()
+                        .forEach(voidFuture -> {
+                            try {
+                                voidFuture.get();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
                 offset.addAndGet(limit);
                 jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
             } catch (Exception e) {
@@ -120,4 +115,32 @@ public class ProductJob implements Job {
                 Duration.between(start, end).toSeconds());
     }
 
+    private Callable<Void> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
+        return () -> {
+            Long itemId = Optional.ofNullable(productItem.getCatalogCard())
+                    .map(KeGQLResponse.CatalogCard::getProductId)
+                    .orElse(null);
+            if (itemId == null) {
+                log.warn("Product id is null continue with next item, if it exists...");
+                return null;
+            }
+            KeProduct.ProductData productData = jobUtilService.getProductData(itemId);
+
+            if (productData == null) {
+                log.warn("Product data with id - {} returned null, continue with next item, if it exists...", itemId);
+                return null;
+            }
+
+            KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
+            if (productMessage.isCorrupted()) {
+                log.warn("Product with id - {} is corrupted", productMessage.getProductId());
+                return null;
+            }
+            RecordId recordId = messagePublisher
+                    .publish(new RedisStreamMessage(streamKey, productMessage, maxlen, "item", waitPending));
+            log.info("Posted product record [stream={}] with id - {}, for category id - [{}], product id - [{}]", streamKey,
+                    recordId, categoryId, itemId);
+            return null;
+        };
+    }
 }

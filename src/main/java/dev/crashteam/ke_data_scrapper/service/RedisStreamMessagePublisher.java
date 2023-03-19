@@ -29,9 +29,12 @@ public class RedisStreamMessagePublisher implements MessagePublisher<RedisStream
             StreamInfo.XInfoGroups streamInfo = getStreamInfo(message.getTopic());
             if (streamInfo != null && streamInfo.stream()
                     .anyMatch(it -> {
-                        log.warn("Pending messages are above [{}], currently pending - [{}], waiting for consumer to finish...",
-                                message.getWaitPending(), it.pendingCount());
-                        return it.pendingCount() >= message.getWaitPending();
+                        boolean wait = it.pendingCount() >= message.getWaitPending();
+                        if (wait) {
+                            log.warn("Pending messages are above [{}], currently pending - [{}], waiting for consumer to finish...",
+                                    message.getWaitPending(), it.pendingCount());
+                        }
+                        return wait;
                     })) {
                 Thread.sleep(5000L);
                 return publish(message);
