@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -50,7 +52,9 @@ public class ProductJob implements Job {
     RedisStreamMessagePublisher messagePublisher;
 
     @Autowired
-    ThreadPoolTaskExecutor jobExecutor;
+    KeProductToMessageMapper messageMapper;
+
+    ExecutorService jobExecutor = Executors.newFixedThreadPool(3);
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -132,7 +136,7 @@ public class ProductJob implements Job {
                 return null;
             }
 
-            KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
+            KeProductMessage productMessage = messageMapper.productToMessage(productData);
             if (productMessage.isCorrupted()) {
                 log.warn("Product with id - {} is corrupted", productMessage.getProductId());
                 return null;

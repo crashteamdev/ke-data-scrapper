@@ -2,6 +2,7 @@ package dev.crashteam.ke_data_scrapper.mapper;
 
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -10,9 +11,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
+@Service
 public class KeProductToMessageMapper {
 
-    public static KeProductMessage productToMessage(KeProduct.ProductData productData) {
+    public KeProductMessage productToMessage(KeProduct.ProductData productData) {
 
         List<KeProductMessage.CharacteristicsData> characteristicsData = new ArrayList<>();
         for (KeProduct.CharacteristicsData characteristic : productData.getCharacteristics()) {
@@ -98,7 +100,7 @@ public class KeProductToMessageMapper {
 
     }
 
-    private static KeProductMessage.ProductCategory getCategory(KeProduct.ProductCategory productCategory) {
+    private KeProductMessage.ProductCategory getCategory(KeProduct.ProductCategory productCategory) {
         KeProductMessage.ProductCategory category = new KeProductMessage.ProductCategory();
         category.setId(productCategory.getId());
         category.setProductAmount(productCategory.getProductAmount());
@@ -109,7 +111,7 @@ public class KeProductToMessageMapper {
         return category;
     }
 
-    private static KeProductMessage.KeProductSeller getSeller(KeProduct.ProductData productData) {
+    private KeProductMessage.KeProductSeller getSeller(KeProduct.ProductData productData) {
         KeProduct.ProductSeller productSeller = productData.getSeller();
         if (productSeller != null) {
             List<KeProductMessage.Contact> contacts = new ArrayList<>();

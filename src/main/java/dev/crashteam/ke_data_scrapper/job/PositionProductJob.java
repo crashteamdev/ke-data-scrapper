@@ -50,6 +50,9 @@ public class PositionProductJob implements Job {
     @Autowired
     ThreadPoolTaskExecutor jobExecutor;
 
+    @Autowired
+    KeProductToMessageMapper messageMapper;
+
     @Value("${app.stream.product.key}")
     public String productStreamKey;
 
@@ -136,7 +139,7 @@ public class PositionProductJob implements Job {
                 return null;
             }
 
-            KeProductMessage productMessage = KeProductToMessageMapper.productToMessage(productData);
+            KeProductMessage productMessage = messageMapper.productToMessage(productData);
             if (productMessage.isCorrupted()) {
                 log.warn("Product with id - {} is corrupted", productMessage.getProductId());
                 return null;
