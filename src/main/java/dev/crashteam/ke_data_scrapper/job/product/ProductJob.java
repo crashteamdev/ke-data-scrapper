@@ -49,7 +49,8 @@ public class ProductJob implements Job {
     @Autowired
     RedisStreamMessagePublisher messagePublisher;
 
-    private final ThreadPoolTaskExecutor jobExecutor;
+    @Autowired
+    ThreadPoolTaskExecutor jobExecutor;
 
     @Value("${app.stream.product.key}")
     public String streamKey;
