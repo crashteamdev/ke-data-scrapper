@@ -54,7 +54,7 @@ public class ProductJob implements Job {
     @Autowired
     KeProductToMessageMapper messageMapper;
 
-    ExecutorService jobExecutor = Executors.newFixedThreadPool(3);
+    ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -75,45 +75,40 @@ public class ProductJob implements Job {
         log.info("Starting job with category id - {}", categoryId);
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
         long limit = 100;
-        while (true) {
-            try {
-                KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
-                if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
-                    break;
-                }
-                var productItems = Optional.ofNullable(gqlResponse.getData()
-                        .getMakeSearch())
-                        .map(KeGQLResponse.MakeSearch::getItems)
-                        .filter(it -> !CollectionUtils.isEmpty(it))
-                        .orElse(Collections.emptyList());
-                if (CollectionUtils.isEmpty(productItems)) {
-                    log.warn("Skipping product job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+        try {
+            while (true) {
+                try {
+                    KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
+                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
+                        break;
+                    }
+                    var productItems = Optional.ofNullable(gqlResponse.getData()
+                            .getMakeSearch())
+                            .map(KeGQLResponse.MakeSearch::getItems)
+                            .filter(it -> !CollectionUtils.isEmpty(it))
+                            .orElse(Collections.emptyList());
+                    if (CollectionUtils.isEmpty(productItems)) {
+                        log.warn("Skipping product job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+                        offset.addAndGet(limit);
+                        jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
+                        continue;
+                    }
+                    log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
+
+                    List<Callable<Void>> callables = new ArrayList<>();
+                    for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
+                        callables.add(postProductRecord(productItem, categoryId));
+                    }
+                    jobExecutor.invokeAll(callables);
                     offset.addAndGet(limit);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
-                    continue;
+                } catch (Exception e) {
+                    log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId, e.getMessage());
+                    break;
                 }
-                log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
-
-                List<Callable<Void>> callables = new ArrayList<>();
-                for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                    callables.add(postProductRecord(productItem, categoryId));
-                }
-                callables.stream()
-                        .map(jobExecutor::submit)
-                        .toList()
-                        .forEach(voidFuture -> {
-                            try {
-                                voidFuture.get();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                offset.addAndGet(limit);
-                jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
-            } catch (Exception e) {
-                log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId, e.getMessage());
-                break;
             }
+        } finally {
+            jobExecutor.shutdown();
         }
         Instant end = Instant.now();
         log.info("Product job - Finished collecting for category id - {}, in {} seconds", categoryId,
