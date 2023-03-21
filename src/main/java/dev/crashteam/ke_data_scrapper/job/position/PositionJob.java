@@ -6,7 +6,6 @@ import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
-import dev.crashteam.ke_data_scrapper.model.stream.RedisStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.RedisStreamMessagePublisher;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -72,45 +70,40 @@ public class PositionJob implements Job {
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
         long limit = 100;
         AtomicLong position = new AtomicLong(0);
-        while (true) {
-            try {
-                KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
-                if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
-                    break;
-                }
-                var productItems = Optional.ofNullable(gqlResponse.getData()
-                        .getMakeSearch())
-                        .map(KeGQLResponse.MakeSearch::getItems)
-                        .filter(it -> !CollectionUtils.isEmpty(it))
-                        .orElse(Collections.emptyList());
-                if (CollectionUtils.isEmpty(productItems)) {
-                    log.warn("Skipping position job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+        try {
+            while (true) {
+                try {
+                    KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
+                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
+                        break;
+                    }
+                    var productItems = Optional.ofNullable(gqlResponse.getData()
+                            .getMakeSearch())
+                            .map(KeGQLResponse.MakeSearch::getItems)
+                            .filter(it -> !CollectionUtils.isEmpty(it))
+                            .orElse(Collections.emptyList());
+                    if (CollectionUtils.isEmpty(productItems)) {
+                        log.warn("Skipping position job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+                        offset.addAndGet(limit);
+                        jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
+                        continue;
+                    }
+                    log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
+                    List<Callable<Void>> callables = new ArrayList<>();
+                    for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
+                        callables.add(postPositionRecord(productItem, position, categoryId));
+                    }
+                    jobExecutor.invokeAll(callables);
                     offset.addAndGet(limit);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
-                    continue;
+                } catch (Exception e) {
+                    log.error("Search for position with category id [{}] finished with exception - [{}]", categoryId,
+                            Optional.ofNullable(e.getCause()).orElse(e).getMessage());
+                    break;
                 }
-                log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
-                List<Callable<Void>> callables = new ArrayList<>();
-                for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                    callables.add(postPositionRecord(productItem, position, categoryId));
-                }
-                callables.stream()
-                        .map(jobExecutor::submit)
-                        .toList()
-                        .forEach(voidFuture -> {
-                            try {
-                                voidFuture.get();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                offset.addAndGet(limit);
-                jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
-            } catch (Exception e) {
-                log.error("Search for position with category id [{}] finished with exception - [{}]", categoryId,
-                        Optional.ofNullable(e.getCause()).orElse(e).getMessage());
-                break;
             }
+        } finally {
+            jobExecutor.shutdown();
         }
         Instant end = Instant.now();
         log.info("Position job - Finished collecting for category id - {}, in {} seconds", categoryId,
