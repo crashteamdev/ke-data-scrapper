@@ -21,12 +21,8 @@ public class SimpleTriggerJobCreatorService {
     private final Scheduler scheduler;
 
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
-        Set<Long> ids;
-        if (allIds) {
-            ids = keService.getIds();
-        } else {
-            ids = keService.getIdsByMainCategory();
-        }
+
+        Set<Long> ids = keService.getIdsByMainCategory(allIds);
         for (Long categoryId : ids) {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);

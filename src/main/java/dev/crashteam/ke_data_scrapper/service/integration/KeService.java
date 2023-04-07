@@ -111,13 +111,17 @@ public class KeService {
     }
 
     @SneakyThrows
-    public Set<Long> getIdsByMainCategory() {
+    public Set<Long> getIdsByMainCategory(boolean all) {
         log.info("Collecting category id's...");
         Set<Long> ids = new HashSet<>();
         KeCategoryChild categoryData = getCategoryData(1L);
         if (categoryData.getPayload() != null && categoryData.getPayload().getCategory() != null) {
             for (KeCategory.Data category : categoryData.getPayload().getCategory().getChildren()) {
-                extractIds(category, ids);
+                if (all) {
+                    extractAllIds(category, ids);
+                } else {
+                    extractIds(category, ids);
+                }
             }
         } else {
             throw new CategoryRequestException("Id collecting failed");
@@ -128,7 +132,7 @@ public class KeService {
 
     private void extractALlIds(KeCategory.Data data, Set<Long> ids) {
         ids.add(data.getId());
-        extractChildIds(data, ids);
+        extractAllIds(data, ids);
     }
 
     private void extractIds(KeCategory.Data data, Set<Long> ids) {
@@ -138,10 +142,11 @@ public class KeService {
         }
     }
 
+
     private Callable<Void> extractIdsAsync(KeCategory.Data data, Set<Long> ids) {
         return () -> {
             ids.add(data.getId());
-            extractChildIds(getCategoryData(data.getId()).getPayload().getCategory(), ids);
+            extractAllIds(getCategoryData(data.getId()).getPayload().getCategory(), ids);
             return null;
         };
     }
@@ -190,10 +195,10 @@ public class KeService {
                 }).getBody();
     }
 
-    private void extractChildIds(KeCategory.Data data, Set<Long> ids) {
+    private void extractAllIds(KeCategory.Data data, Set<Long> ids) {
         ids.add(data.getId());
         for (KeCategory.Data child : data.getChildren()) {
-            extractChildIds(child, ids);
+            extractAllIds(child, ids);
         }
     }
 }
