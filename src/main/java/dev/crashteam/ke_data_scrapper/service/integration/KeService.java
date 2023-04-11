@@ -178,7 +178,9 @@ public class KeService {
                 .value(Map.of("Authorization", authToken,
                         "x-iid", UUID.randomUUID().toString(),
                         "Content-Type", "application/json",
-                        "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+                        "User-Agent", RandomUserAgent.getRandomUserAgent(),
+                        "apollographql-client-name", "web-customers",
+                        "apollographql-client-version", "1.37.0")).build();
         ProxyRequestParams.ContextValue content = ProxyRequestParams.ContextValue.builder()
                 .key("content")
                 .value(base64Body)
