@@ -49,6 +49,7 @@ public class JobUtilService {
                                 "because of response error object with message - {}", categoryId, error.getMessage());
                         return null;
                     } else if (error.getMessage().contains("429")) {
+                        log.warn("Got 429 status from request...");
                         throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
                     } else {
                         offset.addAndGet(limit);
