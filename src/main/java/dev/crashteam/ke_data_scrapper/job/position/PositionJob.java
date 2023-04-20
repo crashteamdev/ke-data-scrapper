@@ -66,8 +66,10 @@ public class PositionJob implements Job {
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.POSITION_CATEGORY_KEY).toString());
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
+        jobDetail.getJobDataMap().put("totalItemProcessed", new AtomicLong(0));
         log.info("Starting position job with category id - {}", categoryId);
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
+        AtomicLong totalItemProcessed = (AtomicLong) jobDetail.getJobDataMap().get("totalItemProcessed");
         long limit = 60;
         AtomicLong position = new AtomicLong(0);
         try {
@@ -77,13 +79,18 @@ public class PositionJob implements Job {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
+                        log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
+                                "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
+                        break;
+                    }
                     var productItems = Optional.ofNullable(gqlResponse.getData()
                             .getMakeSearch())
                             .map(KeGQLResponse.MakeSearch::getItems)
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
                     if (CollectionUtils.isEmpty(productItems)) {
-                        log.warn("Skipping position job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+                        log.warn("Skipping position job gql request for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
                         offset.addAndGet(limit);
                         jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                         continue;
@@ -95,6 +102,8 @@ public class PositionJob implements Job {
                     }
                     jobExecutor.invokeAll(callables);
                     offset.addAndGet(limit);
+                    totalItemProcessed.addAndGet(productItems.size());
+                    jobExecutionContext.getJobDetail().getJobDataMap().put("totalItemProcessed", totalItemProcessed);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                 } catch (Exception e) {
                     log.error("Search for position with category id [{}] finished with exception - [{}]", categoryId,

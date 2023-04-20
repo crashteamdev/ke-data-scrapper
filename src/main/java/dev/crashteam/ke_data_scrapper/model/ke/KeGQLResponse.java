@@ -27,6 +27,7 @@ public class KeGQLResponse {
         private SearchCategory category;
         private List<ResponseCategoryWrapper> categoryTree;
         private List<CatalogCardWrapper> items;
+        private Long total;
     }
 
     @Data

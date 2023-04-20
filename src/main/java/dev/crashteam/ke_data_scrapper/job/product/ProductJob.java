@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.RecordId;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -72,8 +71,10 @@ public class ProductJob implements Job {
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY).toString());
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
+        jobDetail.getJobDataMap().put("totalItemProcessed", new AtomicLong(0));
         log.info("Starting job with category id - {}", categoryId);
         AtomicLong offset = (AtomicLong) jobDetail.getJobDataMap().get("offset");
+        AtomicLong totalItemProcessed = (AtomicLong) jobDetail.getJobDataMap().get("totalItemProcessed");
         long limit = 60;
         try {
             while (true) {
@@ -82,13 +83,18 @@ public class ProductJob implements Job {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
+                        log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
+                                "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
+                        break;
+                    }
                     var productItems = Optional.ofNullable(gqlResponse.getData()
                             .getMakeSearch())
                             .map(KeGQLResponse.MakeSearch::getItems)
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
                     if (CollectionUtils.isEmpty(productItems)) {
-                        log.warn("Skipping product job gql request for categoryId - {} with offset - {}, cause items is empty", categoryId, offset);
+                        log.warn("Skipping product job gql request for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
                         offset.addAndGet(limit);
                         jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                         continue;
@@ -101,7 +107,9 @@ public class ProductJob implements Job {
                     }
                     jobExecutor.invokeAll(callables);
                     offset.addAndGet(limit);
+                    totalItemProcessed.addAndGet(productItems.size());
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
+                    jobExecutionContext.getJobDetail().getJobDataMap().put("totalItemProcessed", totalItemProcessed);
                 } catch (Exception e) {
                     log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId, e.getMessage());
                     break;

@@ -48,6 +48,8 @@ public class JobUtilService {
                         log.warn("Finished collecting data for id - {}, " +
                                 "because of response error object with message - {}", categoryId, error.getMessage());
                         return null;
+                    } else if (error.getMessage().contains("429")) {
+                        throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
                     } else {
                         offset.addAndGet(limit);
                         jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
