@@ -58,7 +58,7 @@ public class KeService {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
-                        "x-iid", UUID.randomUUID().toString(),
+                        "x-iid", "random_uuid()",
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
@@ -75,7 +75,7 @@ public class KeService {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
-                        "x-iid", UUID.randomUUID().toString(),
+                        "x-iid", "random_uuid()",
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
@@ -176,7 +176,7 @@ public class KeService {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
-                        "x-iid", UUID.randomUUID().toString(),
+                        "x-iid", "random_uuid()",
                         "Content-Type", "application/json",
                         "User-Agent", RandomUserAgent.getRandomUserAgent(),
                         "apollographql-client-name", "web-customers",
