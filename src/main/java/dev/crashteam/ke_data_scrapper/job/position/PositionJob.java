@@ -177,8 +177,8 @@ public class PositionJob implements Job {
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                     objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-                    log.info("Posted [stream={}] position record with id - [{}] for category id - [{}]",
-                            streamKey, recordId, categoryId);
+                    log.info("Posted [stream={}] position record with id - [{}] for category id - [{}], product id - [{}]",
+                            streamKey, recordId, categoryId, productItemCard.getProductId());
                 }
             } else {
                 List<Long> skuIds = productResponse.getSkuList()
@@ -198,8 +198,8 @@ public class PositionJob implements Job {
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(streamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                     objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(maxlen));
-                    log.info("Posted [stream={}] position record with id - [{}], for category id - [{}]",
-                            streamKey, recordId, categoryId);
+                    log.info("Posted [stream={}] position record with id - [{}], for category id - [{}], product id - [{}]",
+                            streamKey, recordId, categoryId, productItemCard.getProductId());
                 }
             }
             return null;
