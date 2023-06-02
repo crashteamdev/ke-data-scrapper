@@ -22,7 +22,7 @@ public class SimpleTriggerJobCreatorService {
 
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
 
-        Set<Long> ids = keService.getIdsByMainCategory(allIds);
+        Set<Long> ids = keService.getIdsByGql(allIds);
         for (Long categoryId : ids) {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);

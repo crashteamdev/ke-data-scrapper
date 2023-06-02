@@ -2,6 +2,7 @@ package dev.crashteam.ke_data_scrapper.service.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.CategoryRequestException;
+import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.ProxyRequestParams;
 import dev.crashteam.ke_data_scrapper.model.StyxProxyResult;
 import dev.crashteam.ke_data_scrapper.model.ke.*;
@@ -12,8 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -28,6 +32,7 @@ public class KeService {
 
     private final StyxProxyService proxyService;
     private final ThreadPoolTaskExecutor taskExecutor;
+    private final RetryTemplate retryTemplate;
 
     @Value("${app.integration.kazan.token}")
     private String authToken;
@@ -88,13 +93,59 @@ public class KeService {
         }).getBody();
     }
 
+    public Set<Long> getIdsByGql(boolean all) {
+        Set<Long> ids = getIds(all);
+        Set<Long> categoryIds = new CopyOnWriteArraySet<>();
+        List<Callable<Void>> callables = new ArrayList<>();
+        for (Long id : ids) {
+            callables.add(processGqlForIds(id, categoryIds));
+        }
+        List<Future<Void>> futures = callables.stream()
+                .map(taskExecutor::submit)
+                .toList();
+        for (Future<Void> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                log.error("Multithreading error", e);
+            }
+        }
+        log.info("Collected {} ids from GQL requests", categoryIds.size());
+        return categoryIds;
+    }
+
+    private Callable<Void> processGqlForIds(Long id, Set<Long> ids) {
+        return () -> {
+            KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
+                KeGQLResponse response = getGQLSearchResponse(String.valueOf(id), 0, 0);
+                if (!CollectionUtils.isEmpty(response.getErrors())) {
+                    for (KeGQLResponse.GQLError error : response.getErrors()) {
+                        if (error.getMessage().contains("offset")) {
+                            log.warn("Finished collecting data for id - {}, " +
+                                    "because of response error object with message - {}", id, error.getMessage());
+                            return null;
+                        } else if (error.getMessage().contains("429")) {
+                            log.warn("Got 429 http status from request for category id {}", id);
+                            throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
+                        }
+                    }
+                }
+                return response;
+            });
+            for (KeGQLResponse.ResponseCategoryWrapper categoryWrapper : gqlResponse.getData().getMakeSearch().getCategoryTree()) {
+                ids.add(categoryWrapper.getCategory().getId());
+            }
+            return null;
+        };
+    }
+
     @SneakyThrows
-    public Set<Long> getIds() {
+    public Set<Long> getIds(boolean all) {
         log.info("Collecting category id's...");
         Set<Long> ids = new CopyOnWriteArraySet<>();
         List<Callable<Void>> callables = new ArrayList<>();
         for (KeCategory.Data data : getRootCategories()) {
-            callables.add(extractIdsAsync(data, ids));
+            callables.add(extractIdsAsync(data, ids, all));
         }
         List<Future<Void>> futures = callables.stream()
                 .map(taskExecutor::submit)
@@ -128,27 +179,6 @@ public class KeService {
         }
         log.info("Collected id's size - {}", ids.size());
         return ids;
-    }
-
-    private void extractALlIds(KeCategory.Data data, Set<Long> ids) {
-        ids.add(data.getId());
-        extractAllIds(data, ids);
-    }
-
-    private void extractIds(KeCategory.Data data, Set<Long> ids) {
-        ids.add(data.getId());
-        for (KeCategory.Data child : data.getChildren()) {
-            ids.add(child.getId());
-        }
-    }
-
-
-    private Callable<Void> extractIdsAsync(KeCategory.Data data, Set<Long> ids) {
-        return () -> {
-            ids.add(data.getId());
-            extractAllIds(getCategoryData(data.getId()).getPayload().getCategory(), ids);
-            return null;
-        };
     }
 
     @SneakyThrows
@@ -195,6 +225,30 @@ public class KeService {
         return proxyService
                 .getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeGQLResponse>>() {
                 }).getBody();
+    }
+
+    private void extractALlIds(KeCategory.Data data, Set<Long> ids) {
+        ids.add(data.getId());
+        extractAllIds(data, ids);
+    }
+
+    private void extractIds(KeCategory.Data data, Set<Long> ids) {
+        ids.add(data.getId());
+        for (KeCategory.Data child : data.getChildren()) {
+            ids.add(child.getId());
+        }
+    }
+
+
+    private Callable<Void> extractIdsAsync(KeCategory.Data data, Set<Long> ids, boolean all) {
+        return () -> {
+            if (all) {
+                extractAllIds(data, ids);
+            } else {
+                extractIds(data, ids);
+            }
+            return null;
+        };
     }
 
     private void extractAllIds(KeCategory.Data data, Set<Long> ids) {
