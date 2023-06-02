@@ -93,8 +93,8 @@ public class KeService {
         }).getBody();
     }
 
-    public Set<Long> getIdsByGql(boolean all) {
-        Set<Long> ids = getIds(all);
+    public Set<Long> getIdsByGql() {
+        Set<Long> ids = getIds(false);
         Set<Long> categoryIds = new CopyOnWriteArraySet<>();
         List<Callable<Void>> callables = new ArrayList<>();
         for (Long id : ids) {
