@@ -144,7 +144,14 @@ public class KeService {
         log.info("Collecting category id's...");
         Set<Long> ids = new CopyOnWriteArraySet<>();
         List<Callable<Void>> callables = new ArrayList<>();
-        for (KeCategory.Data data : getRootCategories()) {
+        List<KeCategory.Data> categories = retryTemplate.execute((RetryCallback<List<KeCategory.Data>, CategoryRequestException>) retryContext -> {
+            List<KeCategory.Data> rootCategories = getRootCategories();
+            if (rootCategories == null) {
+                throw new CategoryRequestException("root categories exception");
+            }
+            return rootCategories;
+        });
+        for (KeCategory.Data data : categories) {
             callables.add(extractIdsAsync(data, ids, all));
         }
         List<Future<Void>> futures = callables.stream()
