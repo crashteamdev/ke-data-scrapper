@@ -5,9 +5,9 @@
     <parent>
         <groupId>dev.crashteam</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>1.0.6</version>
+        <version>1.0.7</version>
     </parent>
-    <artifactId>kedatascrapper</artifactId>
+    <artifactId>ke-data-scrapper</artifactId>
     <version>0.0.1</version>
     <name>ke-data-scrapper</name>
     <description>ke-data-scrapper</description>
