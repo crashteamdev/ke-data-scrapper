@@ -148,7 +148,7 @@ public class PositionProductJob implements Job {
             RecordId recordId = streamCommands.xAdd(MapRecord.create(productStreamKey.getBytes(StandardCharsets.UTF_8),
                     Collections.singletonMap("item".getBytes(StandardCharsets.UTF_8),
                             objectMapper.writeValueAsBytes(productMessage))), RedisStreamCommands.XAddOptions.maxlen(productMaxlen));
-            log.info("Posted product record [stream={}] with id - {}, for categoryId - [{}]", productStreamKey, recordId, categoryId);
+            log.debug("Posted product record [stream={}] with id - {}, for categoryId - [{}]", productStreamKey, recordId, categoryId);
             return null;
         };
     }
@@ -211,7 +211,7 @@ public class PositionProductJob implements Job {
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(positionStreamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                     objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(positionMaxlen));
-                    log.info("Posted [stream={}] position record with id - [{}], for categoryId - [{}]",
+                    log.debug("Posted [stream={}] position record with id - [{}], for categoryId - [{}]",
                             positionStreamKey, recordId, categoryId);
                 }
             } else {
@@ -232,7 +232,7 @@ public class PositionProductJob implements Job {
                     RecordId recordId = streamCommands.xAdd(MapRecord.create(positionStreamKey.getBytes(StandardCharsets.UTF_8),
                             Collections.singletonMap("position".getBytes(StandardCharsets.UTF_8),
                                     objectMapper.writeValueAsBytes(positionMessage))), RedisStreamCommands.XAddOptions.maxlen(positionMaxlen));
-                    log.info("Posted [stream={}] position record with id - [{}], for categoryId - [{}]",
+                    log.debug("Posted [stream={}] position record with id - [{}], for categoryId - [{}]",
                             positionStreamKey, recordId, categoryId);
                 }
             }

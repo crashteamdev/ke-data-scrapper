@@ -119,7 +119,7 @@ public class ProductJob implements Job {
             jobExecutor.shutdown();
         }
         Instant end = Instant.now();
-        log.info("Product job - Finished collecting for category id - {}, in {} seconds", categoryId,
+        log.debug("Product job - Finished collecting for category id - {}, in {} seconds", categoryId,
                 Duration.between(start, end).toSeconds());
     }
 
@@ -146,7 +146,7 @@ public class ProductJob implements Job {
             }
             RecordId recordId = messagePublisher
                     .publish(new RedisStreamMessage(streamKey, productMessage, maxlen, "item", waitPending));
-            log.info("Posted product record [stream={}] with id - {}, for category id - [{}], product id - [{}]", streamKey,
+            log.debug("Posted product record [stream={}] with id - {}, for category id - [{}], product id - [{}]", streamKey,
                     recordId, categoryId, itemId);
             return null;
         };
