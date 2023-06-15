@@ -25,7 +25,7 @@ public class SimpleTriggerJobCreatorService {
 
         Set<Long> ids;
         if (!allIds) {
-            ids = keService.getIds(true);
+            ids = keService.getIds(false);
         } else {
             ids = keService.getIdsByGql();
         }
