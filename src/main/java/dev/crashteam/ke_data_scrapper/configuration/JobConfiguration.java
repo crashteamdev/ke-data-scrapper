@@ -1,6 +1,5 @@
 package dev.crashteam.ke_data_scrapper.configuration;
 
-import dev.crashteam.ke_data_scrapper.job.ProductPositionMasterJob;
 import dev.crashteam.ke_data_scrapper.job.category.CategoryJob;
 import dev.crashteam.ke_data_scrapper.job.position.PositionMasterJob;
 import dev.crashteam.ke_data_scrapper.job.product.ProductMasterJob;
