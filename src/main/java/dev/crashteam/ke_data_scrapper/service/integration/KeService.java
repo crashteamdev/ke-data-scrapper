@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.CategoryRequestException;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.ProxyRequestParams;
+import dev.crashteam.ke_data_scrapper.model.ProxySource;
 import dev.crashteam.ke_data_scrapper.model.StyxProxyResult;
 import dev.crashteam.ke_data_scrapper.model.ke.*;
 import dev.crashteam.ke_data_scrapper.util.RandomUserAgent;
@@ -53,6 +54,7 @@ public class KeService {
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
+                .proxySource(ProxySource.MOBILE_PROXY)
                 .build();
         StyxProxyResult<KeCategory> proxyResult = proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<>() {
         });
@@ -71,6 +73,7 @@ public class KeService {
                 .url(ROOT_URL + "/v2/product/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
+                .proxySource(ProxySource.MOBILE_PROXY)
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeProduct>>() {
         }).getBody();
@@ -88,6 +91,7 @@ public class KeService {
                 .url(ROOT_URL + "/category/v2/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
+                .proxySource(ProxySource.MOBILE_PROXY)
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeCategoryChild>>() {
         }).getBody();
@@ -228,6 +232,7 @@ public class KeService {
                 .url("https://dshop.kznexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
                 .context(List.of(headers, content))
+                .proxySource(ProxySource.MOBILE_PROXY)
                 .build();
         return proxyService
                 .getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeGQLResponse>>() {
