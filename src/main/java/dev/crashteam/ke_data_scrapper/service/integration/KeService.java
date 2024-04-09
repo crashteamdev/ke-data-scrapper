@@ -50,7 +50,7 @@ public class KeService {
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
@@ -69,7 +69,7 @@ public class KeService {
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url(ROOT_URL + "/v2/product/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
@@ -87,7 +87,7 @@ public class KeService {
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
+                .timeout(randomTimeout.nextLong(50L, timeout))
                 .url(ROOT_URL + "/category/v2/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
