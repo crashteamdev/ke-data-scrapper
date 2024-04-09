@@ -53,7 +53,7 @@ public class ProductJob implements Job {
     @Autowired
     KeProductToMessageMapper messageMapper;
 
-    ExecutorService jobExecutor = Executors.newWorkStealingPool(5);
+    ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
 
     @Value("${app.stream.product.key}")
     public String streamKey;
