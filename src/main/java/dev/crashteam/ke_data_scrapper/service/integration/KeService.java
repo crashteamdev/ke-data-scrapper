@@ -54,7 +54,7 @@ public class KeService {
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
-                .proxySource(ProxySource.MOBILE_PROXY)
+                .proxySource(ProxySource.PROXYS_IO)
                 .build();
         StyxProxyResult<KeCategory> proxyResult = proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<>() {
         });
@@ -73,7 +73,7 @@ public class KeService {
                 .url(ROOT_URL + "/v2/product/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
-                .proxySource(ProxySource.MOBILE_PROXY)
+                .proxySource(ProxySource.PROXYS_IO)
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeProduct>>() {
         }).getBody();
@@ -91,7 +91,7 @@ public class KeService {
                 .url(ROOT_URL + "/category/v2/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(Collections.singletonList(headers))
-                .proxySource(ProxySource.MOBILE_PROXY)
+                .proxySource(ProxySource.PROXYS_IO)
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeCategoryChild>>() {
         }).getBody();
@@ -232,7 +232,7 @@ public class KeService {
                 .url("https://dshop.kznexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
                 .context(List.of(headers, content))
-                .proxySource(ProxySource.MOBILE_PROXY)
+                .proxySource(ProxySource.PROXYS_IO)
                 .build();
         return proxyService
                 .getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeGQLResponse>>() {

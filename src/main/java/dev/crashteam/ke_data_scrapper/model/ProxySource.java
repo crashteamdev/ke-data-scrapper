@@ -3,7 +3,8 @@ package dev.crashteam.ke_data_scrapper.model;
 public enum ProxySource {
     PROXY_LINE("PROXY_LINE"),
     MOBILE_PROXY("MOBILE_PROXY"),
-    EXTERNAL_SOURCE("External source");
+    EXTERNAL_SOURCE("External source"),
+    PROXYS_IO("PROXYS_IO");
 
     ProxySource(String value) {
         this.value = value;
