@@ -58,7 +58,7 @@ public class PositionJob implements Job {
     @Value("${app.stream.position.waitPending}")
     public Long waitPending;
 
-    ExecutorService jobExecutor = Executors.newWorkStealingPool(6);
+    ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
