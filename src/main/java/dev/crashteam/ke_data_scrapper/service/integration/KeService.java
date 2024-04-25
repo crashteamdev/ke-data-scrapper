@@ -208,6 +208,7 @@ public class KeService {
                 )
                 .build();
         KeSearchQuery searchQuery = KeSearchQuery.builder()
+                .operationName("getMakeSearch")
                 .variables(variables)
                 .query(query)
                 .build();
@@ -229,7 +230,7 @@ public class KeService {
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
                 .timeout(randomTimeout.nextLong(300L, timeout))
-                .url("https://graphql.kazanexpress.ru/")
+                .url("https://dshop.kazanexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
                 .context(List.of(headers, content))
                 .proxySource(ProxySource.PROXYS_IO)
