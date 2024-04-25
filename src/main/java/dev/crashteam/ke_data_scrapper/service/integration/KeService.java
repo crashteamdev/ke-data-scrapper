@@ -218,11 +218,11 @@ public class KeService {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
-                        "x-iid", "random_uuid()",
+                        "X-Iid", "random_uuid()",
                         "Content-Type", "application/json",
                         "User-Agent", RandomUserAgent.getRandomUserAgent(),
-                        "apollographql-client-name", "web-customers",
-                        "apollographql-client-version", "1.37.0")).build();
+                        "Apollographql-Client-Name", "web-customers",
+                        "Apollographql-Client-Version", "1.47.2")).build();
         ProxyRequestParams.ContextValue content = ProxyRequestParams.ContextValue.builder()
                 .key("content")
                 .value(base64Body)
