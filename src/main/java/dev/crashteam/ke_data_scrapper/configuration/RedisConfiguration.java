@@ -20,5 +20,20 @@ public class RedisConfiguration {
     @Value("${spring.redis.password}")
     private String redisPassword;
 
+    @Bean
+    public LettuceConnectionFactory lettuceConnectionFactory() {
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+                .useSsl().disablePeerVerification().build();
+        RedisStandaloneConfiguration redisStandaloneConfig = new RedisStandaloneConfiguration();
+        redisStandaloneConfig.setUsername("default");
+        redisStandaloneConfig.setHostName(redisHost);
+        redisStandaloneConfig.setPort(redisPort);
+        redisStandaloneConfig.setPassword(redisPassword);
+        return new LettuceConnectionFactory(redisStandaloneConfig, clientConfig);
+    }
 
+    @Bean
+    public RedisStreamCommands streamCommands(LettuceConnectionFactory redisConnectionFactory) {
+        return redisConnectionFactory.getConnection().streamCommands();
+    }
 }
