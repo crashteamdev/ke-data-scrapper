@@ -1649,23 +1649,6 @@ public class RandomUserAgent {
     }
 
     public static String getRandomUserAgent() {
-
-        double rand = Math.random() * 100;
-        String browser = null;
-        double count = 0.0;
-        for (Entry<String, Double> freq : freqMap.entrySet()) {
-            count += freq.getValue();
-            if (rand <= count) {
-                browser = freq.getKey();
-                break;
-            }
-        }
-
-        if (browser == null) {
-            browser = "Chrome";
-        }
-
-        String[] userAgents = uaMap.get(browser);
-        return userAgents[(int) Math.floor(Math.random() * userAgents.length)];
+        return "PostmanRuntime/7.37.3";
     }
 }
