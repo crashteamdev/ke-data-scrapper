@@ -229,7 +229,7 @@ public class KeService {
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
                 .timeout(randomTimeout.nextLong(300L, timeout))
-                .url("https://dshop.kznexpress.ru/")
+                .url("https://graphql.kazanexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
                 .context(List.of(headers, content))
                 .proxySource(ProxySource.PROXYS_IO)
