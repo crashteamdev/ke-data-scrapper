@@ -1,6 +1,8 @@
 package dev.crashteam.ke_data_scrapper.util;
 
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -168,6 +170,8 @@ public class RandomUserAgent {
                 .limit(targetStringLength)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
-        return generatedString + " 1.20";
+
+        double version = random.nextDouble(3);
+        return generatedString + " " + BigDecimal.valueOf(version).setScale(3, RoundingMode.HALF_UP);
     }
 }
