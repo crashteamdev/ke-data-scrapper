@@ -4,6 +4,7 @@ package dev.crashteam.ke_data_scrapper.util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 
 public class RandomUserAgent {
 
@@ -157,22 +158,16 @@ public class RandomUserAgent {
     }
 
     public static String getRandomUserAgent() {
-        double rand = Math.random() * 100;
-        String browser = null;
-        double count = 0.0;
-        for (Entry<String, Double> freq : freqMap.entrySet()) {
-            count += freq.getValue();
-            if (rand <= count) {
-                browser = freq.getKey();
-                break;
-            }
-        }
+        int leftLimit = 48; // numeral '0'
+        int rightLimit = 122; // letter 'z'
+        int targetStringLength = 10;
+        Random random = new Random();
 
-        if (browser == null) {
-            browser = "Opera";
-        }
-
-        String[] userAgents = uaMap.get(browser);
-        return userAgents[(int) Math.floor(Math.random() * userAgents.length)];
+        String generatedString = random.ints(leftLimit, rightLimit + 1)
+                .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
+                .limit(targetStringLength)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+        return generatedString + " 1.20";
     }
 }
