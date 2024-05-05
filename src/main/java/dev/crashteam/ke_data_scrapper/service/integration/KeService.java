@@ -48,12 +48,15 @@ public class KeService {
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+        ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
+                .key("market")
+                .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
                 .timeout(randomTimeout.nextLong(300L, timeout))
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
-                .context(Collections.singletonList(headers))
+                .context(List.of(headers, market))
                 .proxySource(ProxySource.PROXYS_IO)
                 .build();
         StyxProxyResult<KeCategory> proxyResult = proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<>() {
@@ -67,12 +70,15 @@ public class KeService {
                 .value(Map.of("Authorization", authToken,
                         "x-iid", "random_uuid()",
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+        ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
+                .key("market")
+                .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
                 .timeout(randomTimeout.nextLong(300L, timeout))
                 .url(ROOT_URL + "/v2/product/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
-                .context(Collections.singletonList(headers))
+                .context(List.of(headers, market))
                 .proxySource(ProxySource.PROXYS_IO)
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeProduct>>() {
@@ -85,12 +91,15 @@ public class KeService {
                 .value(Map.of("Authorization", authToken,
                         "x-iid", "random_uuid()",
                         "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+        ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
+                .key("market")
+                .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
                 .timeout(randomTimeout.nextLong(300L, timeout))
                 .url(ROOT_URL + "/category/v2/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
-                .context(Collections.singletonList(headers))
+                .context(List.of(headers, market))
                 .proxySource(ProxySource.PROXYS_IO)
                 .build();
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeCategoryChild>>() {
@@ -227,12 +236,15 @@ public class KeService {
                 .key("content")
                 .value(base64Body)
                 .build();
+        ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
+                .key("market")
+                .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
                 .timeout(randomTimeout.nextLong(300L, timeout))
                 .url("https://graphql.kazanexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
-                .context(List.of(headers, content))
+                .context(List.of(headers, content, market))
                 .proxySource(ProxySource.PROXYS_IO)
                 .build();
         return proxyService
