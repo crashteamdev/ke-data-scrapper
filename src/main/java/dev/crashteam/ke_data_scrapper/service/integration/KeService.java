@@ -58,7 +58,7 @@ public class KeService {
                 .context(List.of(headers, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(500L, timeout));
+            Thread.sleep(randomTimeout.nextLong(800L, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -83,7 +83,7 @@ public class KeService {
                 .context(List.of(headers, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(700L, timeout));
+            Thread.sleep(randomTimeout.nextLong(800L, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -107,7 +107,7 @@ public class KeService {
                 .context(List.of(headers, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(500L, timeout));
+            Thread.sleep(randomTimeout.nextLong(800L, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -255,7 +255,7 @@ public class KeService {
                 .context(List.of(headers, content, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(500L, timeout));
+            Thread.sleep(randomTimeout.nextLong(800L, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
