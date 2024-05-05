@@ -78,11 +78,15 @@ public class KeService {
                 .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
                 .url(ROOT_URL + "/v2/product/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(List.of(headers, market))
                 .build();
+        try {
+            Thread.sleep(randomTimeout.nextLong(700L, timeout));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeProduct>>() {
         }).getBody();
     }
