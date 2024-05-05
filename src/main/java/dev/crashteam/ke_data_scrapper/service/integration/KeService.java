@@ -53,11 +53,15 @@ public class KeService {
                 .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(500L, timeout))
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
                 .context(List.of(headers, market))
                 .build();
+        try {
+            Thread.sleep(randomTimeout.nextLong(500L, timeout));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         StyxProxyResult<KeCategory> proxyResult = proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<>() {
         });
         return proxyResult.getBody().getPayload();
@@ -94,11 +98,15 @@ public class KeService {
                 .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
                 .url(ROOT_URL + "/category/v2/%s".formatted(id))
                 .httpMethod(HttpMethod.GET.name())
                 .context(List.of(headers, market))
                 .build();
+        try {
+            Thread.sleep(randomTimeout.nextLong(500L, timeout));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return proxyService.getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeCategoryChild>>() {
         }).getBody();
     }
@@ -238,11 +246,15 @@ public class KeService {
                 .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
                 .url("https://graphql.kazanexpress.ru/")
                 .httpMethod(HttpMethod.POST.name())
                 .context(List.of(headers, content, market))
                 .build();
+        try {
+            Thread.sleep(randomTimeout.nextLong(500L, timeout));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return proxyService
                 .getProxyResult(requestParams, new ParameterizedTypeReference<StyxProxyResult<KeGQLResponse>>() {
                 }).getBody();
