@@ -53,7 +53,9 @@ app:
       maxlen: 50000
       waitPending: 0
   integration:
-    timeout: 1000
+    timeout:
+      from: 1000
+      to: 3750
     kazan:
       token:
     styx:

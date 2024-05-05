@@ -38,7 +38,10 @@ public class KeService {
     @Value("${app.integration.kazan.token}")
     private String authToken;
 
-    @Value("${app.integration.timeout}")
+    @Value("${app.integration.timeout.from}")
+    private Long fromTimeout;
+
+    @Value("${app.integration.timeout.to}")
     private Long timeout;
 
     private static final String ROOT_URL = "https://api.kazanexpress.ru/api";
@@ -58,7 +61,7 @@ public class KeService {
                 .context(List.of(headers, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(800L, timeout));
+            Thread.sleep(randomTimeout.nextLong(fromTimeout, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -83,7 +86,7 @@ public class KeService {
                 .context(List.of(headers, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(800L, timeout));
+            Thread.sleep(randomTimeout.nextLong(fromTimeout, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -107,7 +110,7 @@ public class KeService {
                 .context(List.of(headers, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(800L, timeout));
+            Thread.sleep(randomTimeout.nextLong(fromTimeout, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -255,7 +258,7 @@ public class KeService {
                 .context(List.of(headers, content, market))
                 .build();
         try {
-            Thread.sleep(randomTimeout.nextLong(800L, timeout));
+            Thread.sleep(randomTimeout.nextLong(fromTimeout, timeout));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
