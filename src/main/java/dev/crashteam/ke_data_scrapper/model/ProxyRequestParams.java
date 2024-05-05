@@ -12,7 +12,6 @@ public class ProxyRequestParams {
     private String url;
     private String httpMethod;
     private Long timeout;
-    private ProxySource proxySource;
     private List<ContextValue> context;
 
     @Data
