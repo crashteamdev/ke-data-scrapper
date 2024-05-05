@@ -53,7 +53,7 @@ public class KeService {
                 .value("KE").build();
         Random randomTimeout = new Random();
         ProxyRequestParams requestParams = ProxyRequestParams.builder()
-                .timeout(randomTimeout.nextLong(300L, timeout))
+                .timeout(randomTimeout.nextLong(500L, timeout))
                 .url(ROOT_URL + "/main/root-categories")
                 .httpMethod(HttpMethod.GET.name())
                 .context(List.of(headers, market))
