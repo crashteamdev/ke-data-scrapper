@@ -79,6 +79,11 @@ public class PositionJob implements Job {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    if (totalItemProcessed.get() >= 5000) {
+                        log.info("Total processed items - [{}] of category - [{}], " +
+                                "skipping further parsing... ", totalItemProcessed.get(), categoryId);
+                        break;
+                    }
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
                         log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
                                 "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
