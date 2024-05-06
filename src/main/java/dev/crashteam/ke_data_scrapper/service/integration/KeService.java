@@ -4,10 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.CategoryRequestException;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.ProxyRequestParams;
-import dev.crashteam.ke_data_scrapper.model.ProxySource;
 import dev.crashteam.ke_data_scrapper.model.StyxProxyResult;
 import dev.crashteam.ke_data_scrapper.model.ke.*;
-import dev.crashteam.ke_data_scrapper.util.RandomUserAgent;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -49,8 +47,7 @@ public class KeService {
     public List<KeCategory.Data> getRootCategories() {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
-                .value(Map.of("Authorization", authToken,
-                        "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+                .value(Map.of("Authorization", authToken)).build();
         ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
                 .key("market")
                 .value("KE").build();
@@ -74,8 +71,8 @@ public class KeService {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
-                        "x-iid", "random_uuid()",
-                        "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+                        "x-iid", "random_uuid()"
+                )).build();
         ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
                 .key("market")
                 .value("KE").build();
@@ -98,8 +95,7 @@ public class KeService {
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")
                 .value(Map.of("Authorization", authToken,
-                        "x-iid", "random_uuid()",
-                        "User-Agent", RandomUserAgent.getRandomUserAgent())).build();
+                        "x-iid", "random_uuid()")).build();
         ProxyRequestParams.ContextValue market = ProxyRequestParams.ContextValue.builder()
                 .key("market")
                 .value("KE").build();
@@ -241,7 +237,6 @@ public class KeService {
                 .value(Map.of("Authorization", authToken,
                         "X-Iid", "random_uuid()",
                         "Content-Type", "application/json",
-                        "User-Agent", RandomUserAgent.getRandomUserAgent(),
                         "Apollographql-Client-Name", "web-customers",
                         "Apollographql-Client-Version", "1.47.2")).build();
         ProxyRequestParams.ContextValue content = ProxyRequestParams.ContextValue.builder()
