@@ -8,6 +8,7 @@ import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.RedisStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
+import dev.crashteam.ke_data_scrapper.service.ProductDataService;
 import dev.crashteam.ke_data_scrapper.service.RedisStreamMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -52,6 +53,9 @@ public class ProductJob implements Job {
 
     @Autowired
     KeProductToMessageMapper messageMapper;
+
+    @Autowired
+    ProductDataService productDataService;
 
     ExecutorService jobExecutor = Executors.newWorkStealingPool(4);
 
@@ -103,7 +107,11 @@ public class ProductJob implements Job {
 
                     List<Callable<Void>> callables = new ArrayList<>();
                     for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                        callables.add(postProductRecord(productItem, categoryId));
+                        Long productId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
+                        if (productId == null) continue;
+                        if (productDataService.save(productId)) {
+                            callables.add(postProductRecord(productItem, categoryId));
+                        }
                     }
                     jobExecutor.invokeAll(callables);
                     offset.addAndGet(limit);
