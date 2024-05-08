@@ -79,9 +79,9 @@ public class PositionJob implements Job {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
-                    if (offset.get() >= 5000) {
+                    if (offset.get() >= 4000) {
                         log.info("Total offset - [{}] of category - [{}], " +
-                                "skipping further parsing... ", totalItemProcessed.get(), categoryId);
+                                "skipping further parsing... ", offset.get(), categoryId);
                         break;
                     }
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
@@ -95,10 +95,8 @@ public class PositionJob implements Job {
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
                     if (CollectionUtils.isEmpty(productItems)) {
-                        log.warn("Skipping position job gql request for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
-                        offset.addAndGet(limit);
-                        jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
-                        continue;
+                        log.warn("Break position job gql request for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
+                        break;
                     }
                     log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
                     List<Callable<Void>> callables = new ArrayList<>();
