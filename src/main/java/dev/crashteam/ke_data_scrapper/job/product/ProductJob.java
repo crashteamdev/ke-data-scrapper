@@ -119,7 +119,8 @@ public class ProductJob implements Job {
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("totalItemProcessed", totalItemProcessed);
                 } catch (Exception e) {
-                    log.error("Gql search for catalog with id [{}] finished with exception - [{}]", categoryId, e.getMessage());
+                    log.error("Gql search for catalog with id [{}] finished with exception - [{}] on offset - {}",
+                            categoryId, e.getMessage(), offset.get());
                     break;
                 }
             }

@@ -109,8 +109,8 @@ public class PositionJob implements Job {
                     jobExecutionContext.getJobDetail().getJobDataMap().put("totalItemProcessed", totalItemProcessed);
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
                 } catch (Exception e) {
-                    log.error("Search for position with category id [{}] finished with exception - [{}]", categoryId,
-                            Optional.ofNullable(e.getCause()).orElse(e).getMessage());
+                    log.error("Search for position with category id [{}] finished with exception - [{}] on offset - {}", categoryId,
+                            Optional.ofNullable(e.getCause()).orElse(e).getMessage(), offset.get());
                     break;
                 }
             }
