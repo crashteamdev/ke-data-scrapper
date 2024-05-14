@@ -64,3 +64,6 @@ app:
 loki:
   host: localhost
   enabled: false
+
+redis:
+  local: false

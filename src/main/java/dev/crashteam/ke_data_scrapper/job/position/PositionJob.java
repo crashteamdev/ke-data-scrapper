@@ -129,7 +129,7 @@ public class PositionJob implements Job {
                     .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
             KeGQLResponse.CatalogCard productItemCard = productItem.getCatalogCard();
             List<KeGQLResponse.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
-            KeProduct.ProductData productResponse = jobUtilService.getProductData(itemId);
+            KeProduct.ProductData productResponse = jobUtilService.getCachedProductData(itemId);
             if (productResponse == null) {
                 log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));
                 return null;
