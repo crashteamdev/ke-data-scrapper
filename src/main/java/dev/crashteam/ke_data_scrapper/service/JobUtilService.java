@@ -7,7 +7,6 @@ import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
@@ -38,12 +37,6 @@ public class JobUtilService {
             return Optional.ofNullable(product.getPayload()).map(KeProduct.Payload::getData)
                     .orElseThrow(() -> new KeGqlRequestException("Product catalog can't be null"));
         });
-    }
-
-
-    @Cacheable(value = "productCache")
-    public KeProduct.ProductData getCachedProductData(Long itemId) {
-        return getProductData(itemId);
     }
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
