@@ -79,7 +79,7 @@ public class PositionJob implements Job {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
-                    if (offset.get() >= 1500) {
+                    if (offset.get() >= 3000) {
                         log.info("Total offset - [{}] of category - [{}], " +
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
