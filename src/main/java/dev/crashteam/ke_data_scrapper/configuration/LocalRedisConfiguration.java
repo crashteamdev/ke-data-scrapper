@@ -66,6 +66,6 @@ public class LocalRedisConfiguration {
                 .withCacheConfiguration("productCache",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                                .entryTtl(Duration.ofHours(10)));
+                                .entryTtl(Duration.ofHours(5)));
     }
 }
