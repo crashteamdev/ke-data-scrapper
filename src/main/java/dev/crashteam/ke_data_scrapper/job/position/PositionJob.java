@@ -75,13 +75,13 @@ public class PositionJob implements Job {
         try {
             while (true) {
                 try {
-                    KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
-                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
-                        break;
-                    }
-                    if (offset.get() >= 3000) {
+                    if (offset.get() >= 4500) {
                         log.info("Total offset - [{}] of category - [{}], " +
                                 "skipping further parsing... ", offset.get(), categoryId);
+                        break;
+                    }
+                    KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
+                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
