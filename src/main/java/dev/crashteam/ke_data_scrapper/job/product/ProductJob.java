@@ -1,15 +1,24 @@
 package dev.crashteam.ke_data_scrapper.job.product;
 
+import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
+import com.amazonaws.services.kinesis.model.PutRecordsResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.Timestamp;
+import dev.crashteam.ke.scrapper.data.v1.KeProductChange;
+import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
+import dev.crashteam.ke_data_scrapper.mapper.ProductCorruptedException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
+import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
 import dev.crashteam.ke_data_scrapper.model.stream.RedisStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.ProductDataService;
-import dev.crashteam.ke_data_scrapper.service.RedisStreamMessagePublisher;
+import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
+import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
+import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -21,15 +30,14 @@ import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -56,6 +64,12 @@ public class ProductJob implements Job {
 
     @Autowired
     ProductDataService productDataService;
+
+    @Autowired
+    AwsStreamMessagePublisher awsStreamMessagePublisher;
+
+    @Value("${app.aws-stream.ke-stream.name}")
+    public String streamName;
 
     ExecutorService jobExecutor = Executors.newWorkStealingPool(4);
 
@@ -105,7 +119,8 @@ public class ProductJob implements Job {
                     }
                     log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
 
-                    List<Callable<Void>> callables = new ArrayList<>();
+                    List<Callable<PutRecordsRequestEntry>> callables = new ArrayList<>();
+                    List<PutRecordsRequestEntry> entries = new ArrayList<>();
                     for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
                         Long productId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                         if (productId == null) continue;
@@ -113,7 +128,27 @@ public class ProductJob implements Job {
                             callables.add(postProductRecord(productItem, categoryId));
                         }
                     }
-                    jobExecutor.invokeAll(callables);
+                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
+                    futures.forEach(it -> {
+                        try {
+                            if (it.get() != null) {
+                                entries.add(it.get());
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while trying to fill AWS entries:", e);
+                        }
+                    });
+
+                    try {
+                        for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
+                            PutRecordsResult recordsResult = awsStreamMessagePublisher.publish(new AwsStreamMessage(streamName, batch));
+                            log.info("PRODUCT JOB : Posted [{}] records to AWS stream - [{}] for categoryId - [{}]",
+                                    recordsResult.getRecords().size(), streamName, categoryId);
+                        }
+                    } catch (Exception e) {
+                        log.error("PRODUCT JOB : AWS ERROR, couldn't publish to stream - [{}] for category - [{}]", streamName, categoryId, e);
+                    }
+
                     offset.addAndGet(limit);
                     totalItemProcessed.addAndGet(productItems.size());
                     jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
@@ -133,7 +168,7 @@ public class ProductJob implements Job {
                 Duration.between(start, end).toSeconds());
     }
 
-    private Callable<Void> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
+    private Callable<PutRecordsRequestEntry> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
         return () -> {
             Long itemId = Optional.ofNullable(productItem.getCatalogCard())
                     .map(KeGQLResponse.CatalogCard::getProductId)
@@ -154,11 +189,38 @@ public class ProductJob implements Job {
                 log.warn("Product with id - {} is corrupted", productMessage.getProductId());
                 return null;
             }
-            RecordId recordId = messagePublisher
-                    .publish(new RedisStreamMessage(streamKey, productMessage, maxlen, "item", waitPending));
-            log.debug("Posted product record [stream={}] with id - {}, for category id - [{}], product id - [{}]", streamKey,
-                    recordId, categoryId, itemId);
-            return null;
+
+            return getAwsMessageEntry(productData.getId().toString(), productData);
         };
+    }
+
+    private PutRecordsRequestEntry getAwsMessageEntry(String partitionKey, KeProduct.ProductData productData) {
+        try {
+            Instant now = Instant.now();
+            KeProductChange keProductChange = messageMapper.mapToMessage(productData);
+            KeScrapperEvent scrapperEvent = KeScrapperEvent.newBuilder()
+                    .setEventId(UUID.randomUUID().toString())
+                    .setScrapTime(Timestamp.newBuilder()
+                            .setSeconds(now.getEpochSecond())
+                            .setNanos(now.getNano())
+                            .build())
+                    .setEventPayload(KeScrapperEvent.EventPayload.newBuilder()
+                            .setKeProductChange(keProductChange)
+                            .build())
+                    .build();
+            PutRecordsRequestEntry requestEntry = new PutRecordsRequestEntry();
+            requestEntry.setPartitionKey(partitionKey);
+            requestEntry.setData(ByteBuffer.wrap(scrapperEvent.toByteArray()));
+            log.info("PRODUCT JOB - filling AWS entries for categoryId - [{}] productId - [{}]",
+                    productData.getCategory().getId(), productData.getId());
+            return requestEntry;
+        } catch (ProductCorruptedException ex) {
+            log.warn("Corrupted product item, ignoring it", ex);
+        } catch (Exception ex) {
+            log.error("Unexpected exception during publish AWS stream message", ex);
+        }
+        log.warn("AWS message for categoryId - [{}] productId - [{}] is null",
+                productData.getCategory().getId(), productData.getId());
+        return null;
     }
 }

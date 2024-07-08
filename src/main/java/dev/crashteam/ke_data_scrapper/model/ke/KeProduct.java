@@ -81,6 +81,7 @@ public class KeProduct {
         private String purchasePrice;
         private String barcode;
         private Long sellPrice;
+        private Restriction restriction;
     }
 
     @Data
@@ -137,5 +138,12 @@ public class KeProduct {
     public static class Contact {
         private String type;
         private String value;
+    }
+
+    @Data
+    public static class Restriction {
+        private Long restrictedAmount;
+        private Long boughtAmount;
+        private Boolean restricted;
     }
 }

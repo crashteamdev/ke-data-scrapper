@@ -1,4 +1,4 @@
-package dev.crashteam.ke_data_scrapper.service;
+package dev.crashteam.ke_data_scrapper.service.stream;
 
 import dev.crashteam.ke_data_scrapper.model.stream.Message;
 

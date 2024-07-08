@@ -29,6 +29,13 @@ spring:
       minimum-idle: 5
       maximum-pool-size: 12
 app:
+  aws-stream:
+    endpoint: 'yds.serverless.yandexcloud.net'
+    accessKey: fake-access-key
+    secretKey: fake-secret-key
+    region: ru-central-1
+    ke-stream:
+      name: '/ru-central1/b1gtojcphtuae1n9siie/etnvck8jo3kuh0vilc57/ke-stream'
   job:
     cron:
       delete-product-cache: 0 0/59 * * * ?
