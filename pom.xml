@@ -141,7 +141,7 @@
         <dependency>
             <groupId>dev.crashteam</groupId>
             <artifactId>ke-scrapper-proto</artifactId>
-            <version>0.0.1</version>
+            <version>0.0.3</version>
         </dependency>
 
         <!-- support for "Java 8 date time api" -->
