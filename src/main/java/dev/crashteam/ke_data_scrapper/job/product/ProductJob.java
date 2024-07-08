@@ -13,7 +13,6 @@ import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
-import dev.crashteam.ke_data_scrapper.model.stream.RedisStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.ProductDataService;
 import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
@@ -26,7 +25,6 @@ import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.RedisStreamCommands;
-import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
