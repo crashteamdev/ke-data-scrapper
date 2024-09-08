@@ -1,4 +1,4 @@
-package dev.crashteam.ke_data_scrapper.service;
+package dev.crashteam.ke_data_scrapper.service.stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.model.stream.RedisStreamMessage;
