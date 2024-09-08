@@ -8,7 +8,7 @@ import dev.crashteam.ke.scrapper.data.v1.KeProductCategoryPositionChange;
 import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
-import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
+import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
@@ -150,7 +150,7 @@ public class PositionJob implements Job {
                     .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
             KeGQLResponse.CatalogCard productItemCard = productItem.getCatalogCard();
             List<KeGQLResponse.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
-            KeProduct.ProductData productResponse = jobUtilService.getCachedProductData(itemId);
+            CachedProductData productResponse = jobUtilService.getCachedProductData(itemId);
             if (productResponse == null) {
                 log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));
                 return null;
@@ -192,13 +192,6 @@ public class PositionJob implements Job {
                             return false;
                         }).map(KeProduct.SkuData::getId).toList();
                 for (Long skuId : skuIds) {
-                    ProductPositionMessage positionMessage = ProductPositionMessage.builder()
-                            .position(position.get())
-                            .productId(productItemCard.getProductId())
-                            .skuId(skuId)
-                            .categoryId(categoryId)
-                            .time(Instant.now().toEpochMilli())
-                            .build();
                     PutRecordsRequestEntry awsMessage = getAwsMessage(position.get(), productItemCard.getProductId(), skuId, categoryId);
                     if (awsMessage != null) {
                         entries.add(awsMessage);
@@ -212,13 +205,6 @@ public class PositionJob implements Job {
                         .toList();
 
                 for (Long skuId : skuIds) {
-                    ProductPositionMessage positionMessage = ProductPositionMessage.builder()
-                            .position(position.get())
-                            .productId(productItemCard.getProductId())
-                            .skuId(skuId)
-                            .categoryId(categoryId)
-                            .time(Instant.now().toEpochMilli())
-                            .build();
                     PutRecordsRequestEntry awsMessage = getAwsMessage(position.get(), productItemCard.getProductId(), skuId, categoryId);
                     if (awsMessage != null) {
                         entries.add(awsMessage);

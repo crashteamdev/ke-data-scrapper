@@ -1,6 +1,8 @@
 package dev.crashteam.ke_data_scrapper.service;
 
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
+import dev.crashteam.ke_data_scrapper.mapper.KeProductToCachedProduct;
+import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
@@ -42,8 +44,8 @@ public class JobUtilService {
 
 
     @Cacheable(value = "productCache")
-    public KeProduct.ProductData getCachedProductData(Long itemId) {
-        return getProductData(itemId);
+    public CachedProductData getCachedProductData(Long itemId) {
+        return KeProductToCachedProduct.toCachedData(getProductData(itemId));
     }
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
