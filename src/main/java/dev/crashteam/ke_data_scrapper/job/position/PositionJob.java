@@ -3,6 +3,7 @@ package dev.crashteam.ke_data_scrapper.job.position;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
+import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
@@ -129,7 +130,7 @@ public class PositionJob implements Job {
                     .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
             KeGQLResponse.CatalogCard productItemCard = productItem.getCatalogCard();
             List<KeGQLResponse.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
-            KeProduct.ProductData productResponse = jobUtilService.getCachedProductData(itemId);
+            CachedProductData productResponse = jobUtilService.getCachedProductData(itemId);
             if (productResponse == null) {
                 log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));
                 return null;

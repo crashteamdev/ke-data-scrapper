@@ -107,7 +107,8 @@ public class ProductJob implements Job {
 
                     List<Callable<Void>> callables = new ArrayList<>();
                     for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                        Long productId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
+                        Long productId = Optional.ofNullable(productItem.getCatalogCard())
+                                .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                         if (productId == null) continue;
                         if (productDataService.save(productId)) {
                             callables.add(postProductRecord(productItem, categoryId));
