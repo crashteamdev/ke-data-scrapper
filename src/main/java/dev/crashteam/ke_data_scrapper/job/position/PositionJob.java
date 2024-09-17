@@ -76,7 +76,7 @@ public class PositionJob implements Job {
         try {
             while (true) {
                 try {
-                    if (offset.get() >= 4500) {
+                    if (offset.get() >= 2500) {
                         log.info("Total offset - [{}] of category - [{}], " +
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
