@@ -130,8 +130,8 @@ public class ProductJob implements Job {
             jobExecutor.shutdown();
         }
         Instant end = Instant.now();
-        log.debug("Product job - Finished collecting for category id - {}, in {} seconds", categoryId,
-                Duration.between(start, end).toSeconds());
+        log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
+                categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
     }
 
     private Callable<Void> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
