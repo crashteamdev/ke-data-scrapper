@@ -27,7 +27,7 @@ public class SimpleTriggerJobCreatorService {
         if (!allIds) {
             ids = keService.getIds(false);
         } else {
-            ids = keService.getIdsByGql();
+            ids = keService.getAllIds();
         }
         for (Long categoryId : ids) {
             String name = jobName.formatted(categoryId);

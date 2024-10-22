@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -114,52 +115,6 @@ public class KeService {
         }).getBody();
     }
 
-    public Set<Long> getIdsByGql() {
-        Set<Long> ids = getIds(false);
-        Set<Long> categoryIds = new CopyOnWriteArraySet<>();
-        List<Callable<Void>> callables = new ArrayList<>();
-        for (Long id : ids) {
-            callables.add(processGqlForIds(id, categoryIds));
-        }
-        List<Future<Void>> futures = callables.stream()
-                .map(taskExecutor::submit)
-                .toList();
-        for (Future<Void> future : futures) {
-            try {
-                future.get();
-            } catch (Exception e) {
-                log.error("Multithreading error", e);
-            }
-        }
-        log.info("Collected {} ids from GQL requests", categoryIds.size());
-        return categoryIds;
-    }
-
-    private Callable<Void> processGqlForIds(Long id, Set<Long> ids) {
-        return () -> {
-            KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
-                KeGQLResponse response = getGQLSearchResponse(String.valueOf(id), 0, 0);
-                if (!CollectionUtils.isEmpty(response.getErrors())) {
-                    for (KeGQLResponse.GQLError error : response.getErrors()) {
-                        if (error.getMessage().contains("offset")) {
-                            log.warn("Finished collecting data for id - {}, " +
-                                    "because of response error object with message - {}", id, error.getMessage());
-                            return null;
-                        } else if (error.getMessage().contains("429")) {
-                            log.warn("Got 429 http status from request for category id {}", id);
-                            throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
-                        }
-                    }
-                }
-                return response;
-            });
-            for (KeGQLResponse.ResponseCategoryWrapper categoryWrapper : gqlResponse.getData().getMakeSearch().getCategoryTree()) {
-                ids.add(categoryWrapper.getCategory().getId());
-            }
-            return null;
-        };
-    }
-
     @SneakyThrows
     public Set<Long> getIds(boolean all) {
         log.info("Collecting category id's...");
@@ -184,26 +139,6 @@ public class KeService {
             } catch (ExecutionException e) {
                 throw Optional.ofNullable(e.getCause()).orElse(e);
             }
-        }
-        log.info("Collected id's size - {}", ids.size());
-        return ids;
-    }
-
-    @SneakyThrows
-    public Set<Long> getIdsByMainCategory(boolean all) {
-        log.info("Collecting category id's...");
-        Set<Long> ids = new HashSet<>();
-        KeCategoryChild categoryData = getCategoryData(1L);
-        if (categoryData.getPayload() != null && categoryData.getPayload().getCategory() != null) {
-            for (KeCategory.Data category : categoryData.getPayload().getCategory().getChildren()) {
-                if (all) {
-                    extractAllIds(category, ids);
-                } else {
-                    extractIds(category, ids);
-                }
-            }
-        } else {
-            throw new CategoryRequestException("Id collecting failed");
         }
         log.info("Collected id's size - {}", ids.size());
         return ids;
@@ -262,9 +197,96 @@ public class KeService {
                 }).getBody();
     }
 
-    private void extractALlIds(KeCategory.Data data, Set<Long> ids) {
-        ids.add(data.getId());
-        extractAllIds(data, ids);
+    public KeGQLResponse retryableGQLRequest(long categoryId, long offset, long limit) {
+        return retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
+            KeGQLResponse response = getGQLSearchResponse(String.valueOf(categoryId), offset, limit);
+            if (!CollectionUtils.isEmpty(response.getErrors())) {
+                for (KeGQLResponse.GQLError error : response.getErrors()) {
+                    if (error.getMessage().contains("offset")) {
+                        log.warn("Finished collecting data for id - {}, " +
+                                "because of response error object with message - {}", categoryId, error.getMessage());
+                        return null;
+                    } else if (error.getMessage().contains("429")) {
+                        log.warn("Got 429 http status from request for category id {}", categoryId);
+                        throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
+                    }
+                }
+            }
+            return response;
+        });
+    }
+
+    public Set<Long> getAllIds() {
+        Set<Long> ids = new HashSet<>();
+        List<KeCategory.Data> rootCategories = retryTemplate.execute((RetryCallback<List<KeCategory.Data>, CategoryRequestException>) retryContext -> {
+            var categoryData = getRootCategories();
+            if (categoryData == null) {
+                throw new CategoryRequestException();
+            }
+            return categoryData;
+        });
+        for (KeCategory.Data rootCategory : rootCategories) {
+            ids.addAll(getIdsFromRoot(rootCategory));
+        }
+        KeGQLResponse gqlResponse = retryableGQLRequest(1, 0, 0);
+        List<KeGQLResponse.ResponseCategoryWrapper> categoryTree = gqlResponse.getData().getMakeSearch().getCategoryTree();
+        for (KeCategory.Data rootCategory : rootCategories) {
+            addIdsFromTree(rootCategory, categoryTree, ids);
+        }
+        log.info("Got {} ids", ids.size());
+        return ids;
+    }
+
+    private Set<Long> getIdsFromRoot(KeCategory.Data rootCategory) {
+        Set<Long> ids = new HashSet<>();
+        ids.add(rootCategory.getId());
+        for (KeCategory.Data child : rootCategory.getChildren()) {
+            ids.addAll(getIdsFromRoot(child));
+        }
+        return ids;
+    }
+
+    private void addIdsFromTree(
+            KeCategory.Data category,
+            List<KeGQLResponse.ResponseCategoryWrapper> categoryTree,
+            Set<Long> ids) {
+        ids.add(category.getId());
+        if (!CollectionUtils.isEmpty(category.getChildren())) {
+            for (KeCategory.Data child : category.getChildren()) {
+                addIdsFromTree(child, categoryTree, ids);
+            }
+        }
+        if (hasChildren(category.getId(), categoryTree)) {
+            Set<KeGQLResponse.ResponseCategoryWrapper> responseCategories = categoryTree.stream()
+                    .filter(it -> it.getCategory().getParent() != null
+                            && Objects.equals(it.getCategory().getParent().getId(), category.getId()))
+                    .collect(Collectors.toSet());
+            for (KeGQLResponse.ResponseCategoryWrapper responseCategory : responseCategories) {
+                addIdsFromChildrenCategory(responseCategory, categoryTree, ids);
+            }
+        }
+    }
+
+    private void addIdsFromChildrenCategory(
+            KeGQLResponse.ResponseCategoryWrapper responseCategory,
+            List<KeGQLResponse.ResponseCategoryWrapper> categoryTree,
+            Set<Long> ids) {
+        KeGQLResponse.ResponseCategory childCategory = responseCategory.getCategory();
+        ids.add(childCategory.getId());
+        if (hasChildren(childCategory.getId(), categoryTree)) {
+            Set<KeGQLResponse.ResponseCategoryWrapper> responseCategories = categoryTree.stream()
+                    .filter(it -> it.getCategory().getParent() != null
+                            && Objects.equals(it.getCategory().getParent().getId(), childCategory.getId()))
+                    .collect(Collectors.toSet());
+            for (KeGQLResponse.ResponseCategoryWrapper category : responseCategories) {
+                addIdsFromChildrenCategory(category, categoryTree, ids);
+            }
+        }
+    }
+
+    private boolean hasChildren(Long categoryId, List<KeGQLResponse.ResponseCategoryWrapper> categoryTree) {
+        return categoryTree.stream().anyMatch(it -> it.getCategory().getParent() != null
+                && Objects.equals(it.getCategory().getParent().getId(), categoryId));
     }
 
     private void extractIds(KeCategory.Data data, Set<Long> ids) {
