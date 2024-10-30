@@ -8,6 +8,7 @@ import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
+import dev.crashteam.ke_data_scrapper.service.MetricService;
 import dev.crashteam.ke_data_scrapper.service.RedisStreamMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,9 @@ public class PositionJob implements Job {
     @Autowired
     RedisStreamMessagePublisher messagePublisher;
 
+    @Autowired
+    MetricService metricService;
+
     @Value("${app.stream.position.key}")
     public String streamKey;
 
@@ -60,6 +64,9 @@ public class PositionJob implements Job {
     public Long waitPending;
 
     ExecutorService jobExecutor = Executors.newWorkStealingPool(4);
+
+
+    private static final String JOB_TYPE = "POSITION_JOB";
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -112,6 +119,7 @@ public class PositionJob implements Job {
                 } catch (Exception e) {
                     log.error("Search for position with category id [{}] finished with exception - [{}] on offset - {}", categoryId,
                             Optional.ofNullable(e.getCause()).orElse(e).getMessage(), offset.get());
+                    metricService.incrementErrorJob(JOB_TYPE);
                     break;
                 }
             }
@@ -121,6 +129,7 @@ public class PositionJob implements Job {
         Instant end = Instant.now();
         log.info("Position job - Finished collecting for category id - {}, in {} seconds", categoryId,
                 Duration.between(start, end).toSeconds());
+        metricService.incrementFinishJob(JOB_TYPE);
     }
 
     private Callable<Void> postPositionRecord(KeGQLResponse.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {

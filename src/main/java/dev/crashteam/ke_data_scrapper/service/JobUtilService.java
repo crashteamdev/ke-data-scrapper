@@ -6,6 +6,7 @@ import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
@@ -26,6 +27,7 @@ public class JobUtilService {
     private final KeService keService;
     private final RetryTemplate retryTemplate;
 
+    @Timed(value = "get_mm_product_data_timer", histogram = true)
     public KeProduct.ProductData getProductData(Long itemId) {
         return retryTemplate.execute((RetryCallback<KeProduct.ProductData, KeGqlRequestException>) retryContext -> {
             KeProduct product = keService.getProduct(itemId);
@@ -48,6 +50,7 @@ public class JobUtilService {
         return KeProductToCachedProduct.toCachedData(getProductData(itemId));
     }
 
+    @Timed(value = "get_mm_gql_data_timer", histogram = true)
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
         return retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
             try {
