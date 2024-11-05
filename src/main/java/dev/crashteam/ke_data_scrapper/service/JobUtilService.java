@@ -16,6 +16,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -26,10 +28,11 @@ public class JobUtilService {
 
     private final KeService keService;
     private final RetryTemplate retryTemplate;
+    private final MetricService metricService;
 
-    @Timed(value = "get_mm_product_data_timer", histogram = true)
     public KeProduct.ProductData getProductData(Long itemId) {
-        return retryTemplate.execute((RetryCallback<KeProduct.ProductData, KeGqlRequestException>) retryContext -> {
+        Instant start = Instant.now();
+        KeProduct.ProductData productData = retryTemplate.execute((RetryCallback<KeProduct.ProductData, KeGqlRequestException>) retryContext -> {
             KeProduct product = keService.getProduct(itemId);
             if (!CollectionUtils.isEmpty(product.getErrors())) {
                 String errorMessage = product.getErrors()
@@ -42,6 +45,9 @@ public class JobUtilService {
             return Optional.ofNullable(product.getPayload()).map(KeProduct.Payload::getData)
                     .orElseThrow(() -> new KeGqlRequestException("Product catalog can't be null"));
         });
+        Instant end = Instant.now();
+        metricService.recordResponseTime(Duration.between(start, end).toMillis(), "mm_product_data");
+        return productData;
     }
 
 
@@ -50,9 +56,9 @@ public class JobUtilService {
         return KeProductToCachedProduct.toCachedData(getProductData(itemId));
     }
 
-    @Timed(value = "get_mm_gql_data_timer", histogram = true)
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
-        return retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
+        Instant start = Instant.now();
+        KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
             try {
                 KeGQLResponse response = keService.getGQLSearchResponse(String.valueOf(categoryId), offset.get(), limit);
                 if (!CollectionUtils.isEmpty(response.getErrors())) {
@@ -77,5 +83,8 @@ public class JobUtilService {
                 throw new KeGqlRequestException();
             }
         });
+        Instant end = Instant.now();
+        metricService.recordResponseTime(Duration.between(start, end).toMillis(), "mm_gql_data");
+        return gqlResponse;
     }
 }
