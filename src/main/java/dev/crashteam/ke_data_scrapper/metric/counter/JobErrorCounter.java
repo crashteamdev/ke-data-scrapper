@@ -11,6 +11,6 @@ public class JobErrorCounter extends BasicCounter {
     }
 
     public void increment(String jobType) {
-        findOrCreate(Tags.of("job_type", jobType));
+        findOrCreate(Tags.of("job_type", jobType)).increment();
     }
 }
