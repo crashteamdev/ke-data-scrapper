@@ -9,6 +9,8 @@ import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
+import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
+import dev.crashteam.ke_data_scrapper.model.dto.ProductPositionMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
@@ -16,6 +18,8 @@ import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
+import dev.crashteam.ke_data_scrapper.service.MetricService;
+import dev.crashteam.ke_data_scrapper.service.RedisStreamMessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
@@ -56,6 +60,9 @@ public class PositionJob implements Job {
     @Autowired
     AwsStreamMessagePublisher awsStreamMessagePublisher;
 
+    @Autowired
+    MetricService metricService;
+
     @Value("${app.stream.position.key}")
     public String streamKey;
 
@@ -69,6 +76,9 @@ public class PositionJob implements Job {
     public String streamName;
 
     ExecutorService jobExecutor = Executors.newWorkStealingPool(4);
+
+
+    private static final String JOB_TYPE = "POSITION_JOB";
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -85,7 +95,7 @@ public class PositionJob implements Job {
         try {
             while (true) {
                 try {
-                    if (offset.get() >= 4500) {
+                    if (offset.get() >= 3500) {
                         log.info("Total offset - [{}] of category - [{}], " +
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
@@ -132,6 +142,7 @@ public class PositionJob implements Job {
                 } catch (Exception e) {
                     log.error("Search for position with category id [{}] finished with exception - [{}] on offset - {}", categoryId,
                             Optional.ofNullable(e.getCause()).orElse(e).getMessage(), offset.get());
+                    metricService.incrementErrorJob(JOB_TYPE);
                     break;
                 }
             }
@@ -141,6 +152,7 @@ public class PositionJob implements Job {
         Instant end = Instant.now();
         log.info("Position job - Finished collecting for category id - {}, in {} seconds", categoryId,
                 Duration.between(start, end).toSeconds());
+        metricService.incrementFinishJob(JOB_TYPE);
     }
 
     private Callable<List<PutRecordsRequestEntry>> postPositionRecord(KeGQLResponse.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {

@@ -74,3 +74,13 @@ loki:
 
 redis:
   local: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  metrics:
+    export:
+      prometheus:
+        enabled: true

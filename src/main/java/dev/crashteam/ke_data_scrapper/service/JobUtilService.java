@@ -6,6 +6,7 @@ import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
@@ -15,6 +16,8 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,9 +28,11 @@ public class JobUtilService {
 
     private final KeService keService;
     private final RetryTemplate retryTemplate;
+    private final MetricService metricService;
 
     public KeProduct.ProductData getProductData(Long itemId) {
-        return retryTemplate.execute((RetryCallback<KeProduct.ProductData, KeGqlRequestException>) retryContext -> {
+        Instant start = Instant.now();
+        KeProduct.ProductData productData = retryTemplate.execute((RetryCallback<KeProduct.ProductData, KeGqlRequestException>) retryContext -> {
             KeProduct product = keService.getProduct(itemId);
             if (!CollectionUtils.isEmpty(product.getErrors())) {
                 String errorMessage = product.getErrors()
@@ -40,6 +45,9 @@ public class JobUtilService {
             return Optional.ofNullable(product.getPayload()).map(KeProduct.Payload::getData)
                     .orElseThrow(() -> new KeGqlRequestException("Product catalog can't be null"));
         });
+        Instant end = Instant.now();
+        metricService.recordResponseTime(Duration.between(start, end).toMillis(), "mm_product_data");
+        return productData;
     }
 
 
@@ -49,7 +57,8 @@ public class JobUtilService {
     }
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
-        return retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
+        Instant start = Instant.now();
+        KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
             try {
                 KeGQLResponse response = keService.getGQLSearchResponse(String.valueOf(categoryId), offset.get(), limit);
                 if (!CollectionUtils.isEmpty(response.getErrors())) {
@@ -74,5 +83,8 @@ public class JobUtilService {
                 throw new KeGqlRequestException();
             }
         });
+        Instant end = Instant.now();
+        metricService.recordResponseTime(Duration.between(start, end).toMillis(), "mm_gql_data");
+        return gqlResponse;
     }
 }

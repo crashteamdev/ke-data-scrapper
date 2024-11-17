@@ -14,6 +14,7 @@ import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
+import dev.crashteam.ke_data_scrapper.service.MetricService;
 import dev.crashteam.ke_data_scrapper.service.ProductDataService;
 import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
@@ -64,6 +65,9 @@ public class ProductJob implements Job {
     ProductDataService productDataService;
 
     @Autowired
+    MetricService metricService;
+
+    @Autowired
     AwsStreamMessagePublisher awsStreamMessagePublisher;
 
     @Value("${app.aws-stream.ke-stream.name}")
@@ -79,6 +83,8 @@ public class ProductJob implements Job {
 
     @Value("${app.stream.product.waitPending}")
     public Long waitPending;
+
+    private static final String JOB_TYPE = "PRODUCT_JOB";
 
     @Override
     @SneakyThrows
@@ -156,6 +162,7 @@ public class ProductJob implements Job {
                     log.error("Gql search for catalog with id [{}] finished with exception - [{}] on offset - {}",
                             categoryId, Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(e.getMessage()),
                             offset.get(), e);
+                    metricService.incrementErrorJob(JOB_TYPE);
                     break;
                 }
             }
@@ -163,8 +170,9 @@ public class ProductJob implements Job {
             jobExecutor.shutdown();
         }
         Instant end = Instant.now();
-        log.debug("Product job - Finished collecting for category id - {}, in {} seconds", categoryId,
-                Duration.between(start, end).toSeconds());
+        log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
+                categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
+        metricService.incrementFinishJob(JOB_TYPE);
     }
 
     private Callable<PutRecordsRequestEntry> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
