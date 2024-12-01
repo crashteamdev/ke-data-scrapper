@@ -1,15 +1,16 @@
 package dev.crashteam.ke_data_scrapper.service;
 
+import dev.crashteam.ke_data_scrapper.model.ke.KeCategory;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.scheduling.quartz.SimpleTriggerFactoryBean;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.quartz.SimpleTrigger.MISFIRE_INSTRUCTION_FIRE_NOW;
 
@@ -24,10 +25,12 @@ public class SimpleTriggerJobCreatorService {
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
 
         Set<Long> ids;
+        List<Long> rootIds = Collections.emptyList();
         if (!allIds) {
             ids = keService.getIds(false);
         } else {
             ids = keService.getAllIds();
+            rootIds = keService.getRootCategories().stream().map(KeCategory.Data::getId).toList();
         }
         for (Long categoryId : ids) {
             String name = jobName.formatted(categoryId);
@@ -44,6 +47,10 @@ public class SimpleTriggerJobCreatorService {
             factoryBean.setName(name);
             factoryBean.setMisfireInstruction(MISFIRE_INSTRUCTION_FIRE_NOW);
             factoryBean.afterPropertiesSet();
+            if (!CollectionUtils.isEmpty(rootIds)
+                    && rootIds.stream().anyMatch(it -> it.equals(categoryId))) {
+                factoryBean.setPriority(10);
+            }
 
             try {
                 boolean exists = scheduler.checkExists(jobKey);
