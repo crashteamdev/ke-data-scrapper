@@ -104,10 +104,10 @@ public class ProductJob implements Job {
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
                     if (CollectionUtils.isEmpty(productItems)) {
-                        log.warn("Skipping product job gql request for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
+                        log.warn("Skipping all product job gql requests for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
                         offset.addAndGet(limit);
                         jobExecutionContext.getJobDetail().getJobDataMap().put("offset", offset);
-                        continue;
+                        break;
                     }
                     log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
 
