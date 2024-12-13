@@ -87,4 +87,35 @@ public class JobUtilService {
         metricService.recordResponseTime(Duration.between(start, end).toMillis(), "mm_gql_data");
         return gqlResponse;
     }
+
+    public KeGQLResponse getResponse(AtomicLong offset, Long categoryId, Long limit) {
+        Instant start = Instant.now();
+        KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
+            try {
+                KeGQLResponse response = keService.getGQLSearchResponse(String.valueOf(categoryId), offset.get(), limit);
+                if (!CollectionUtils.isEmpty(response.getErrors())) {
+                    for (KeGQLResponse.GQLError error : response.getErrors()) {
+                        if (error.getMessage().contains("offset")) {
+                            log.warn("Finished collecting data for id - {}, " +
+                                    "because of response error object with message - {}", categoryId, error.getMessage());
+                            return null;
+                        } else if (error.getMessage().contains("429")) {
+                            log.warn("Got 429 http status from request for category id {}", categoryId);
+                            throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
+                        } else {
+                            offset.addAndGet(limit);
+                            throw new KeGqlRequestException("Request ended with error message - %s".formatted(error.getMessage()));
+                        }
+                    }
+                }
+                return response;
+            } catch (Exception e) {
+                log.error("GQL ERROR, retrying", e);
+                throw new KeGqlRequestException();
+            }
+        });
+        Instant end = Instant.now();
+        metricService.recordResponseTime(Duration.between(start, end).toMillis(), "mm_gql_data");
+        return gqlResponse;
+    }
 }

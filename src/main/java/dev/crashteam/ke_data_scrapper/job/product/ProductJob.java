@@ -2,6 +2,7 @@ package dev.crashteam.ke_data_scrapper.job.product;
 
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Timestamp;
 import dev.crashteam.ke.scrapper.data.v1.KeProductChange;
@@ -92,6 +93,13 @@ public class ProductJob implements Job {
         Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY).toString());
+
+        String jsonMap = (String) jobDetail.getJobDataMap().get(Constant.PRODUCT_CATEGORY_MAP_KEY);
+        TypeReference<HashMap<Long,Set<Long>>> typeRef
+                = new TypeReference<>() {
+        };
+        HashMap<Long, Set<Long>> categoryMap = objectMapper.readValue(jsonMap, typeRef);
+
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         jobDetail.getJobDataMap().put("totalItemProcessed", new AtomicLong(0));
         log.info("Starting job with category id - {}", categoryId);
@@ -130,7 +138,7 @@ public class ProductJob implements Job {
                                 .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                         if (productId == null) continue;
                         if (productDataService.save(productId)) {
-                            callables.add(postProductRecord(productItem, categoryId));
+                            callables.add(postProductRecord(productItem));
                         }
                     }
                     List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
@@ -173,9 +181,93 @@ public class ProductJob implements Job {
         log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
                 categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
         metricService.incrementFinishJob(JOB_TYPE);
+        log.info("Starting CHILDREN jobs for category id - {}", categoryId);
+        for (Long childId : categoryMap.get(categoryId)) {
+            processCategory(childId);
+        }
     }
 
-    private Callable<PutRecordsRequestEntry> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem, Long categoryId) {
+    private void processCategory(Long categoryId) {
+        Instant start = Instant.now();
+        log.info("Starting CHILD job with category id - {}", categoryId);
+        AtomicLong offset = new AtomicLong(0);
+        AtomicLong totalItemProcessed = new AtomicLong(0);
+        long limit = 100;
+        try {
+            while (true) {
+                try {
+                    KeGQLResponse gqlResponse = jobUtilService.getResponse(offset, categoryId, limit);
+                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
+                        break;
+                    }
+                    if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
+                        log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
+                                "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
+                        break;
+                    }
+                    var productItems = Optional.ofNullable(gqlResponse.getData()
+                                    .getMakeSearch())
+                            .map(KeGQLResponse.MakeSearch::getItems)
+                            .filter(it -> !CollectionUtils.isEmpty(it))
+                            .orElse(Collections.emptyList());
+                    if (CollectionUtils.isEmpty(productItems)) {
+                        log.warn("Skipping all product job gql requests for categoryId - {} with offset - {}, cause items are empty", categoryId, offset);
+                        offset.addAndGet(limit);
+                        break;
+                    }
+                    log.info("Iterate through products for itemsCount={};categoryId={}", productItems.size(), categoryId);
+
+                    List<Callable<PutRecordsRequestEntry>> callables = new ArrayList<>();
+                    List<PutRecordsRequestEntry> entries = new ArrayList<>();
+                    for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
+                        Long productId = Optional.ofNullable(productItem.getCatalogCard())
+                                .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
+                        if (productId == null) continue;
+                        if (productDataService.save(productId)) {
+                            callables.add(postProductRecord(productItem));
+                        }
+                    }
+                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
+                    futures.forEach(it -> {
+                        try {
+                            if (it.get() != null) {
+                                entries.add(it.get());
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while trying to fill AWS entries:", e);
+                        }
+                    });
+
+                    try {
+                        for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
+                            PutRecordsResult recordsResult = awsStreamMessagePublisher.publish(new AwsStreamMessage(streamName, batch));
+                            log.info("PRODUCT JOB : Posted [{}] records to AWS stream - [{}] for categoryId - [{}]",
+                                    recordsResult.getRecords().size(), streamName, categoryId);
+                        }
+                    } catch (Exception e) {
+                        log.error("PRODUCT JOB : AWS ERROR, couldn't publish to stream - [{}] for category - [{}]", streamName, categoryId, e);
+                    }
+
+                    offset.addAndGet(limit);
+                    totalItemProcessed.addAndGet(productItems.size());
+                } catch (Exception e) {
+                    log.error("Gql search for catalog with id [{}] finished with exception - [{}] on offset - {}",
+                            categoryId, Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(e.getMessage()),
+                            offset.get(), e);
+                    metricService.incrementErrorJob(JOB_TYPE);
+                    break;
+                }
+            }
+        } finally {
+            jobExecutor.shutdown();
+        }
+        Instant end = Instant.now();
+        log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
+                categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
+        metricService.incrementFinishJob(JOB_TYPE);
+    }
+
+    private Callable<PutRecordsRequestEntry> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem) {
         return () -> {
             Long itemId = Optional.ofNullable(productItem.getCatalogCard())
                     .map(KeGQLResponse.CatalogCard::getProductId)

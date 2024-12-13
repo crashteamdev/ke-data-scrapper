@@ -115,18 +115,25 @@ public class KeService {
         }).getBody();
     }
 
+    public Map<Long, Set<Long>> getRootIdsMap() {
+        log.info("Collecting root category map");
+        Map<Long, Set<Long>> rootCategoriesMap = new HashMap<>();
+        List<KeCategory.Data> categories = getRootCategoriesRetryable();
+        for (KeCategory.Data category : categories) {
+            rootCategoriesMap.put(category.getId(), new HashSet<>());
+            for (KeCategory.Data child : category.getChildren()) {
+                rootCategoriesMap.get(category.getId()).add(child.getId());
+            }
+        }
+        return rootCategoriesMap;
+    }
+
     @SneakyThrows
     public Set<Long> getIds(boolean all) {
         log.info("Collecting category id's...");
         Set<Long> ids = new CopyOnWriteArraySet<>();
         List<Callable<Void>> callables = new ArrayList<>();
-        List<KeCategory.Data> categories = retryTemplate.execute((RetryCallback<List<KeCategory.Data>, CategoryRequestException>) retryContext -> {
-            List<KeCategory.Data> rootCategories = getRootCategories();
-            if (rootCategories == null) {
-                throw new CategoryRequestException("root categories exception");
-            }
-            return rootCategories;
-        });
+        List<KeCategory.Data> categories = getRootCategoriesRetryable();
         for (KeCategory.Data data : categories) {
             callables.add(extractIdsAsync(data, ids, all));
         }
@@ -313,5 +320,15 @@ public class KeService {
         for (KeCategory.Data child : data.getChildren()) {
             extractAllIds(child, ids);
         }
+    }
+
+    private List<KeCategory.Data> getRootCategoriesRetryable() {
+        return retryTemplate.execute((RetryCallback<List<KeCategory.Data>, CategoryRequestException>) retryContext -> {
+            List<KeCategory.Data> rootCategories = getRootCategories();
+            if (rootCategories == null) {
+                throw new CategoryRequestException("root categories exception");
+            }
+            return rootCategories;
+        });
     }
 }
