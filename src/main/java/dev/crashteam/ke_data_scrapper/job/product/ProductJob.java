@@ -35,8 +35,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -74,7 +72,7 @@ public class ProductJob implements Job {
     @Value("${app.aws-stream.ke-stream.name}")
     public String streamName;
 
-    ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
+    //ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -138,19 +136,20 @@ public class ProductJob implements Job {
                                 .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                         if (productId == null) continue;
                         if (productDataService.save(productId)) {
-                            callables.add(postProductRecord(productItem));
+                            //callables.add(postProductRecordAsync(productItem));
+                            entries.add(postProductRecord(productItem));
                         }
                     }
-                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
-                    futures.forEach(it -> {
-                        try {
-                            if (it.get() != null) {
-                                entries.add(it.get());
-                            }
-                        } catch (Exception e) {
-                            log.error("Error while trying to fill AWS entries:", e);
-                        }
-                    });
+//                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
+//                    futures.forEach(it -> {
+//                        try {
+//                            if (it.get() != null) {
+//                                entries.add(it.get());
+//                            }
+//                        } catch (Exception e) {
+//                            log.error("Error while trying to fill AWS entries:", e);
+//                        }
+//                    });
 
                     try {
                         for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
@@ -175,7 +174,7 @@ public class ProductJob implements Job {
                 }
             }
         } finally {
-            jobExecutor.shutdown();
+            //jobExecutor.shutdown();
         }
         Instant end = Instant.now();
         log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
@@ -224,19 +223,20 @@ public class ProductJob implements Job {
                                 .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                         if (productId == null) continue;
                         if (productDataService.save(productId)) {
-                            callables.add(postProductRecord(productItem));
+                           // callables.add(postProductRecordAsync(productItem));
+                            entries.add(postProductRecord(productItem));
                         }
                     }
-                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
-                    futures.forEach(it -> {
-                        try {
-                            if (it.get() != null) {
-                                entries.add(it.get());
-                            }
-                        } catch (Exception e) {
-                            log.error("Error while trying to fill AWS entries:", e);
-                        }
-                    });
+//                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
+//                    futures.forEach(it -> {
+//                        try {
+//                            if (it.get() != null) {
+//                                entries.add(it.get());
+//                            }
+//                        } catch (Exception e) {
+//                            log.error("Error while trying to fill AWS entries:", e);
+//                        }
+//                    });
 
                     try {
                         for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
@@ -259,7 +259,7 @@ public class ProductJob implements Job {
                 }
             }
         } finally {
-            jobExecutor.shutdown();
+            //jobExecutor.shutdown();
         }
         Instant end = Instant.now();
         log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
@@ -267,7 +267,31 @@ public class ProductJob implements Job {
         metricService.incrementFinishJob(JOB_TYPE);
     }
 
-    private Callable<PutRecordsRequestEntry> postProductRecord(KeGQLResponse.CatalogCardWrapper productItem) {
+    private PutRecordsRequestEntry postProductRecord(KeGQLResponse.CatalogCardWrapper productItem) {
+        Long itemId = Optional.ofNullable(productItem.getCatalogCard())
+                .map(KeGQLResponse.CatalogCard::getProductId)
+                .orElse(null);
+        if (itemId == null) {
+            log.warn("Product id is null continue with next item, if it exists...");
+            return null;
+        }
+        KeProduct.ProductData productData = jobUtilService.getProductData(itemId);
+
+        if (productData == null) {
+            log.warn("Product data with id - {} returned null, continue with next item, if it exists...", itemId);
+            return null;
+        }
+
+        KeProductMessage productMessage = messageMapper.productToMessage(productData);
+        if (productMessage.isCorrupted()) {
+            log.warn("Product with id - {} is corrupted", productMessage.getProductId());
+            return null;
+        }
+
+        return getAwsMessageEntry(productData.getId().toString(), productData);
+    }
+
+    private Callable<PutRecordsRequestEntry> postProductRecordAsync(KeGQLResponse.CatalogCardWrapper productItem) {
         return () -> {
             Long itemId = Optional.ofNullable(productItem.getCatalogCard())
                     .map(KeGQLResponse.CatalogCard::getProductId)
