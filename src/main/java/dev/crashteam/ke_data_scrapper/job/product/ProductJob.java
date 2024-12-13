@@ -74,7 +74,7 @@ public class ProductJob implements Job {
     @Value("${app.aws-stream.ke-stream.name}")
     public String streamName;
 
-    ExecutorService jobExecutor = Executors.newWorkStealingPool(4);
+    ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
 
     @Value("${app.stream.product.key}")
     public String streamKey;
