@@ -64,10 +64,9 @@ public class SimpleTriggerJobCreatorService {
         }
     }
 
-    public void createLightJob(String jobName, String idKey, String categoryMapKey, Class<? extends Job> jobClass) {
+    public void createLightJob(String jobName, String idKey, Class<? extends Job> jobClass) {
 
         Map<Long, Set<Long>> rootIdsMap = keService.getRootIdsMap();
-        ObjectMapper objectMapper = new ObjectMapper();
 
         rootIdsMap.forEach((categoryId, children) -> {
             String name = jobName.formatted(categoryId);
@@ -75,11 +74,6 @@ public class SimpleTriggerJobCreatorService {
             JobDetail jobDetail = JobBuilder.newJob(jobClass)
                     .withIdentity(jobKey).build();
             jobDetail.getJobDataMap().put(idKey, String.valueOf(categoryId));
-            try {
-                jobDetail.getJobDataMap().put(categoryMapKey, objectMapper.writeValueAsString(rootIdsMap));
-            } catch (Exception e) {
-                log.info("Map serializing exception for job with categoryId - {}", categoryId);
-            }
 
             SimpleTriggerFactoryBean factoryBean = new SimpleTriggerFactoryBean();
             factoryBean.setStartTime(new Date());

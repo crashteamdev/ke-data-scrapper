@@ -17,6 +17,7 @@ import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.MetricService;
 import dev.crashteam.ke_data_scrapper.service.ProductDataService;
+import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
@@ -69,6 +70,9 @@ public class ProductJob implements Job {
     @Autowired
     AwsStreamMessagePublisher awsStreamMessagePublisher;
 
+    @Autowired
+    KeService keService;
+
     @Value("${app.aws-stream.ke-stream.name}")
     public String streamName;
 
@@ -91,12 +95,6 @@ public class ProductJob implements Job {
         Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY).toString());
-
-        String jsonMap = (String) jobDetail.getJobDataMap().get(Constant.PRODUCT_CATEGORY_MAP_KEY);
-        TypeReference<HashMap<Long,Set<Long>>> typeRef
-                = new TypeReference<>() {
-        };
-        HashMap<Long, Set<Long>> categoryMap = objectMapper.readValue(jsonMap, typeRef);
 
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         jobDetail.getJobDataMap().put("totalItemProcessed", new AtomicLong(0));
@@ -181,7 +179,8 @@ public class ProductJob implements Job {
                 categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
         metricService.incrementFinishJob(JOB_TYPE);
         log.info("Starting CHILDREN jobs for category id - {}", categoryId);
-        for (Long childId : categoryMap.get(categoryId)) {
+        Map<Long, Set<Long>> rootIdsMap = keService.getRootIdsMap();
+        for (Long childId : rootIdsMap.get(categoryId)) {
             processCategory(childId);
         }
     }
@@ -262,7 +261,7 @@ public class ProductJob implements Job {
             //jobExecutor.shutdown();
         }
         Instant end = Instant.now();
-        log.debug("Product job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
+        log.debug("Product job - Finished collecting for child category id - {}, total items processed - {} in {} seconds",
                 categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
         metricService.incrementFinishJob(JOB_TYPE);
     }
@@ -292,29 +291,7 @@ public class ProductJob implements Job {
     }
 
     private Callable<PutRecordsRequestEntry> postProductRecordAsync(KeGQLResponse.CatalogCardWrapper productItem) {
-        return () -> {
-            Long itemId = Optional.ofNullable(productItem.getCatalogCard())
-                    .map(KeGQLResponse.CatalogCard::getProductId)
-                    .orElse(null);
-            if (itemId == null) {
-                log.warn("Product id is null continue with next item, if it exists...");
-                return null;
-            }
-            KeProduct.ProductData productData = jobUtilService.getProductData(itemId);
-
-            if (productData == null) {
-                log.warn("Product data with id - {} returned null, continue with next item, if it exists...", itemId);
-                return null;
-            }
-
-            KeProductMessage productMessage = messageMapper.productToMessage(productData);
-            if (productMessage.isCorrupted()) {
-                log.warn("Product with id - {} is corrupted", productMessage.getProductId());
-                return null;
-            }
-
-            return getAwsMessageEntry(productData.getId().toString(), productData);
-        };
+        return () -> postProductRecord(productItem);
     }
 
     private PutRecordsRequestEntry getAwsMessageEntry(String partitionKey, KeProduct.ProductData productData) {
