@@ -16,11 +16,13 @@ public class KeProduct {
     private List<ProductError> errors;
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Payload {
         private ProductData data;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ProductData {
         private Long id;
         private String title;
@@ -44,6 +46,7 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ProductCategory implements Serializable {
         private Long id;
         private String title;
@@ -52,12 +55,14 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ProductPhoto {
         private String color;
         private String photoKey;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CharacteristicsData {
         private Long id;
         private String title;
@@ -65,6 +70,7 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Characteristic {
         private Long id;
         private String title;
@@ -72,6 +78,7 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SkuData {
         private Long id;
         private List<ScuCharacteristic> characteristics;
@@ -85,12 +92,14 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ScuCharacteristic {
         private Integer charIndex;
         private Integer valueIndex;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ProductSeller {
         private Long id;
         private String title;
@@ -105,6 +114,7 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Feedback {
         private Long reviewId;
         private Long productId;
@@ -119,6 +129,7 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class FeedBackReply {
         private Long id;
         private Long date;
@@ -128,6 +139,7 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ProductError {
         private String code;
         private String message;
@@ -135,12 +147,14 @@ public class KeProduct {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Contact {
         private String type;
         private String value;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Restriction {
         private Long restrictedAmount;
         private Long boughtAmount;
