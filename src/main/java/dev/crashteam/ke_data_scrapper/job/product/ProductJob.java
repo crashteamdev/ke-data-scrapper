@@ -115,7 +115,7 @@ public class ProductJob implements InterruptableJob {
                         break;
                     }
                     var productItems = Optional.ofNullable(gqlResponse.getData()
-                            .getMakeSearch())
+                                    .getMakeSearch())
                             .map(KeGQLResponse.MakeSearch::getItems)
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
@@ -130,12 +130,14 @@ public class ProductJob implements InterruptableJob {
                     List<Callable<PutRecordsRequestEntry>> callables = new ArrayList<>();
                     List<PutRecordsRequestEntry> entries = new ArrayList<>();
                     for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                        Long productId = Optional.ofNullable(productItem.getCatalogCard())
-                                .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
-                        if (productId == null) continue;
-                        if (productDataService.save(productId)) {
-                            //callables.add(postProductRecordAsync(productItem));
-                            entries.add(postProductRecord(productItem));
+                        if (jobRunning) {
+                            Long productId = Optional.ofNullable(productItem.getCatalogCard())
+                                    .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
+                            if (productId == null) continue;
+                            if (productDataService.save(productId)) {
+                                //callables.add(postProductRecordAsync(productItem));
+                                entries.add(postProductRecord(productItem));
+                            }
                         }
                     }
 //                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
@@ -218,12 +220,14 @@ public class ProductJob implements InterruptableJob {
                     List<Callable<PutRecordsRequestEntry>> callables = new ArrayList<>();
                     List<PutRecordsRequestEntry> entries = new ArrayList<>();
                     for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                        Long productId = Optional.ofNullable(productItem.getCatalogCard())
-                                .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
-                        if (productId == null) continue;
-                        if (productDataService.save(productId)) {
-                           // callables.add(postProductRecordAsync(productItem));
-                            entries.add(postProductRecord(productItem));
+                        if (jobRunning) {
+                            Long productId = Optional.ofNullable(productItem.getCatalogCard())
+                                    .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
+                            if (productId == null) continue;
+                            if (productDataService.save(productId)) {
+                                // callables.add(postProductRecordAsync(productItem));
+                                entries.add(postProductRecord(productItem));
+                            }
                         }
                     }
 //                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
@@ -240,11 +244,11 @@ public class ProductJob implements InterruptableJob {
                     try {
                         for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
                             PutRecordsResult recordsResult = awsStreamMessagePublisher.publish(new AwsStreamMessage(streamName, batch));
-                            log.info("PRODUCT JOB : Posted [{}] records to AWS stream - [{}] for categoryId - [{}]",
+                            log.info("CHILD PRODUCT JOB : Posted [{}] records to AWS stream - [{}] for categoryId - [{}]",
                                     recordsResult.getRecords().size(), streamName, categoryId);
                         }
                     } catch (Exception e) {
-                        log.error("PRODUCT JOB : AWS ERROR, couldn't publish to stream - [{}] for category - [{}]", streamName, categoryId, e);
+                        log.error("CHILD PRODUCT JOB : AWS ERROR, couldn't publish to stream - [{}] for category - [{}]", streamName, categoryId, e);
                     }
 
                     offset.addAndGet(limit);
@@ -261,7 +265,7 @@ public class ProductJob implements InterruptableJob {
             //jobExecutor.shutdown();
         }
         Instant end = Instant.now();
-        log.debug("Product job - Finished collecting for child category id - {}, total items processed - {} in {} seconds",
+        log.debug("Child Product job - Finished collecting for child category id - {}, total items processed - {} in {} seconds",
                 categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
         metricService.incrementFinishJob(JOB_TYPE);
     }
