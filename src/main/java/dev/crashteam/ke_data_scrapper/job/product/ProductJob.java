@@ -2,7 +2,6 @@ package dev.crashteam.ke_data_scrapper.job.product;
 
 import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
 import com.amazonaws.services.kinesis.model.PutRecordsResult;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Timestamp;
 import dev.crashteam.ke.scrapper.data.v1.KeProductChange;
@@ -36,7 +35,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -44,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 @DisallowConcurrentExecution
 @RequiredArgsConstructor
-public class ProductJob implements Job {
+public class ProductJob implements InterruptableJob {
 
     @Autowired
     RedisStreamCommands streamCommands;
@@ -87,6 +85,8 @@ public class ProductJob implements Job {
     @Value("${app.stream.product.waitPending}")
     public Long waitPending;
 
+    private boolean jobRunning = true;
+
     private static final String JOB_TYPE = "PRODUCT_JOB";
 
     @Override
@@ -103,7 +103,7 @@ public class ProductJob implements Job {
         AtomicLong totalItemProcessed = (AtomicLong) jobDetail.getJobDataMap().get("totalItemProcessed");
         long limit = 100;
         try {
-            while (true) {
+            while (jobRunning) {
                 try {
                     KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
@@ -192,7 +192,7 @@ public class ProductJob implements Job {
         AtomicLong totalItemProcessed = new AtomicLong(0);
         long limit = 100;
         try {
-            while (true) {
+            while (jobRunning) {
                 try {
                     KeGQLResponse gqlResponse = jobUtilService.getResponse(offset, categoryId, limit);
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
@@ -322,5 +322,11 @@ public class ProductJob implements Job {
         log.warn("AWS message for categoryId - [{}] productId - [{}] is null",
                 productData.getCategory().getId(), productData.getId());
         return null;
+    }
+
+    @Override
+    public void interrupt() throws UnableToInterruptJobException {
+        log.info("Interrupting Product job");
+        this.jobRunning = false;
     }
 }

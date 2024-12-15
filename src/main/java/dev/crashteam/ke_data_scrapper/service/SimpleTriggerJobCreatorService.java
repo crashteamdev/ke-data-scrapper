@@ -86,9 +86,10 @@ public class SimpleTriggerJobCreatorService {
 
             try {
                 boolean exists = scheduler.checkExists(jobKey);
-                if (!exists) {
-                    scheduler.scheduleJob(jobDetail, factoryBean.getObject());
+                if (exists) {
+                    scheduler.interrupt(jobKey);
                 }
+                scheduler.scheduleJob(jobDetail, factoryBean.getObject());
             } catch (SchedulerException e) {
                 log.warn("Scheduler exception occurred with message: {}", e.getMessage());
             } catch (Exception e) {
