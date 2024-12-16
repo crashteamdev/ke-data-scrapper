@@ -35,6 +35,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -74,7 +77,7 @@ public class ProductJob implements InterruptableJob {
     @Value("${app.aws-stream.ke-stream.name}")
     public String streamName;
 
-    //ExecutorService jobExecutor = Executors.newWorkStealingPool(3);
+    ExecutorService jobExecutor = Executors.newFixedThreadPool(2);
 
     @Value("${app.stream.product.key}")
     public String streamKey;
@@ -135,21 +138,21 @@ public class ProductJob implements InterruptableJob {
                                     .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                             if (productId == null) continue;
                             if (productDataService.save(productId)) {
-                                //callables.add(postProductRecordAsync(productItem));
-                                entries.add(postProductRecord(productItem));
+                                callables.add(postProductRecordAsync(productItem));
+                                //entries.add(postProductRecord(productItem));
                             }
                         }
                     }
-//                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
-//                    futures.forEach(it -> {
-//                        try {
-//                            if (it.get() != null) {
-//                                entries.add(it.get());
-//                            }
-//                        } catch (Exception e) {
-//                            log.error("Error while trying to fill AWS entries:", e);
-//                        }
-//                    });
+                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
+                    futures.forEach(it -> {
+                        try {
+                            if (it.get() != null) {
+                                entries.add(it.get());
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while trying to fill AWS entries:", e);
+                        }
+                    });
 
                     try {
                         for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
@@ -225,21 +228,21 @@ public class ProductJob implements InterruptableJob {
                                     .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                             if (productId == null) continue;
                             if (productDataService.save(productId)) {
-                                // callables.add(postProductRecordAsync(productItem));
-                                entries.add(postProductRecord(productItem));
+                                callables.add(postProductRecordAsync(productItem));
+                                //entries.add(postProductRecord(productItem));
                             }
                         }
                     }
-//                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
-//                    futures.forEach(it -> {
-//                        try {
-//                            if (it.get() != null) {
-//                                entries.add(it.get());
-//                            }
-//                        } catch (Exception e) {
-//                            log.error("Error while trying to fill AWS entries:", e);
-//                        }
-//                    });
+                    List<Future<PutRecordsRequestEntry>> futures = jobExecutor.invokeAll(callables);
+                    futures.forEach(it -> {
+                        try {
+                            if (it.get() != null) {
+                                entries.add(it.get());
+                            }
+                        } catch (Exception e) {
+                            log.error("Error while trying to fill AWS entries:", e);
+                        }
+                    });
 
                     try {
                         for (List<PutRecordsRequestEntry> batch : ScrapperUtils.getBatches(entries, 50)) {
