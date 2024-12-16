@@ -89,7 +89,9 @@ public class SimpleTriggerJobCreatorService {
                 if (exists) {
                     scheduler.interrupt(jobKey);
                     Thread.sleep(10000L);
-                    scheduler.deleteJob(jobKey);
+                    if (scheduler.checkExists(jobKey)) {
+                        scheduler.deleteJob(jobKey);
+                    }
                 }
                 scheduler.scheduleJob(jobDetail, factoryBean.getObject());
             } catch (SchedulerException e) {
