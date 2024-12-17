@@ -72,8 +72,7 @@ public class PositionJob implements Job {
     @Value("${app.aws-stream.ke-stream.name}")
     public String streamName;
 
-    ExecutorService jobExecutor = Executors.newWorkStealingPool(4);
-
+    ExecutorService jobExecutor = Executors.newFixedThreadPool(2);
 
     private static final String JOB_TYPE = "POSITION_JOB";
 
