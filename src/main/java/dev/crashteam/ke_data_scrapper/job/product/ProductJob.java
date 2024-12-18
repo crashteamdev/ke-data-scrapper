@@ -335,5 +335,6 @@ public class ProductJob implements InterruptableJob {
     public void interrupt() throws UnableToInterruptJobException {
         log.info("Interrupting Product job");
         this.jobRunning = false;
+        jobExecutor.shutdown();
     }
 }

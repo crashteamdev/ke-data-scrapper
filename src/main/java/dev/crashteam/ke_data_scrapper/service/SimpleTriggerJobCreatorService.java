@@ -88,7 +88,7 @@ public class SimpleTriggerJobCreatorService {
                 boolean exists = scheduler.checkExists(jobKey);
                 if (exists) {
                     scheduler.interrupt(jobKey);
-                    Thread.sleep(10000L);
+                    Thread.sleep(15000L);
                     if (scheduler.checkExists(jobKey)) {
                         scheduler.deleteJob(jobKey);
                     }
