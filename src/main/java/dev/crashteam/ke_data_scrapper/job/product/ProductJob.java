@@ -90,6 +90,8 @@ public class ProductJob implements InterruptableJob {
 
     private boolean jobRunning = true;
 
+    private Long jobCategoryId;
+
     private static final String JOB_TYPE = "PRODUCT_JOB";
 
     @Override
@@ -98,6 +100,7 @@ public class ProductJob implements InterruptableJob {
         Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.CATEGORY_ID_KEY).toString());
+        jobCategoryId = categoryId;
 
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         jobDetail.getJobDataMap().put("totalItemProcessed", new AtomicLong(0));
@@ -333,7 +336,7 @@ public class ProductJob implements InterruptableJob {
 
     @Override
     public void interrupt() throws UnableToInterruptJobException {
-        log.info("Interrupting Product job");
+        log.info("Interrupting Product job with id - {}", jobCategoryId);
         this.jobRunning = false;
         jobExecutor.shutdown();
     }

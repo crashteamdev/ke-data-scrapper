@@ -67,7 +67,15 @@ public class SimpleTriggerJobCreatorService {
     public void createLightJob(String jobName, String idKey, Class<? extends Job> jobClass) {
 
         Map<Long, Set<Long>> rootIdsMap = keService.getRootIdsMap();
-
+        log.info("Creating light job for {}", jobClass.getName());
+        try {
+            for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
+                scheduler.interrupt(currentlyExecutingJob.getJobDetail().getKey());
+                Thread.sleep(20000L);
+            }
+        } catch (Exception e) {
+            log.error("Failed to interrupt executing jobs with exception ", e);
+        }
         rootIdsMap.forEach((categoryId, children) -> {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);
@@ -83,16 +91,7 @@ public class SimpleTriggerJobCreatorService {
             factoryBean.setName(name);
             factoryBean.setMisfireInstruction(MISFIRE_INSTRUCTION_FIRE_NOW);
             factoryBean.afterPropertiesSet();
-
             try {
-                boolean exists = scheduler.checkExists(jobKey);
-                if (exists) {
-                    scheduler.interrupt(jobKey);
-                    Thread.sleep(15000L);
-                    if (scheduler.checkExists(jobKey)) {
-                        scheduler.deleteJob(jobKey);
-                    }
-                }
                 scheduler.scheduleJob(jobDetail, factoryBean.getObject());
             } catch (SchedulerException e) {
                 log.warn("Scheduler exception occurred with message: {}", e.getMessage());
@@ -101,6 +100,6 @@ public class SimpleTriggerJobCreatorService {
             }
         });
 
-    }
+}
 
 }
