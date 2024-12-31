@@ -1,19 +1,20 @@
 package dev.crashteam.ke_data_scrapper.job.position;
 
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
 @Slf4j
 @Component
-public class CleanPositionJob implements Job {
+public class CleanPositionJob {
 
     @Autowired
     public Scheduler scheduler;
@@ -24,8 +25,9 @@ public class CleanPositionJob implements Job {
     private static final String CALL_DELETE_POSITION_JOBS =
             "CALL deletePositionJobs()";
 
-    @Override
-    public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+    @Async
+    @Scheduled(cron = "${app.job.cron.clean-position-jobs}")
+    public void execute() throws JobExecutionException {
         log.info("Deleting position jobs...");
         try {
             for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {

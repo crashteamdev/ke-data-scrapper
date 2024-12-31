@@ -32,17 +32,8 @@ public class JobConfiguration {
     @Value("${app.job.cron.category-job}")
     private String categoryJobCron;
 
-    @Value("${app.job.cron.trim-job}")
-    private String trimJobCron;
-
-    @Value("${app.job.cron.position-product-job}")
-    private String positionProductJobCron;
-
     @Value("${app.job.cron.delete-product-cache}")
     private String deleteProductCache;
-
-    @Value("${app.job.cron.clean-position-jobs}")
-    private String cleanPositionJobs;
 
     @PostConstruct
     public void init() {
@@ -54,8 +45,6 @@ public class JobConfiguration {
                 Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
         scheduleJob(new JobModel(Constant.DELETE_PRODUCT_CACHE_JOB_NAME, CacheHandler.class, deleteProductCache,
                 Constant.DELETE_PRODUCT_CACHE_TRIGGER_NAME, "cache"));
-        scheduleJob(new JobModel(Constant.CLEAN_POSITIONS_JOB_NAME, CleanPositionJob.class, cleanPositionJobs,
-                Constant.CLEAN_POSITIONS_TRIGGER_NAME, "clean"));
     }
 
     private void scheduleJob(JobModel jobModel) {
