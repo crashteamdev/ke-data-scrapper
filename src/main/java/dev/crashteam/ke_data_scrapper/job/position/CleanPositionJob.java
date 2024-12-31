@@ -26,6 +26,7 @@ public class CleanPositionJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        log.info("Deleting position jobs...");
         try {
             for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
                 scheduler.interrupt(currentlyExecutingJob.getJobDetail().getKey());
@@ -43,6 +44,11 @@ public class CleanPositionJob implements Job {
             jdbcTemplate.call(con -> con.prepareCall(CALL_DELETE_POSITION_JOBS), Collections.emptyList());
         } catch (Exception e) {
             log.error("Error while deleting position jobs, retrying", e);
+            try {
+                Thread.sleep(4000L);
+            } catch (InterruptedException ex) {
+                log.error("Interrupt exception", ex);
+            }
             attempt = attempt - 1;
             deletePositionJobs(attempt);
         }
