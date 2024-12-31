@@ -24,4 +24,7 @@ public class Constant {
 
     public static final String DELETE_PRODUCT_CACHE_JOB_NAME = "delete-product-cache-job";
     public static final String DELETE_PRODUCT_CACHE_TRIGGER_NAME = "delete-product-cache-trigger";
+
+    public static final String CLEAN_POSITIONS_JOB_NAME = "category-master-job";
+    public static final String CLEAN_POSITIONS_TRIGGER_NAME = "category-master-trigger";
 }

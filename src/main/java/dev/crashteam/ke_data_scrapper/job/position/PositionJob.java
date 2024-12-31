@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 @DisallowConcurrentExecution
 @RequiredArgsConstructor
-public class PositionJob implements Job {
+public class PositionJob implements InterruptableJob {
 
     @Autowired
     JobUtilService jobUtilService;
@@ -76,11 +76,15 @@ public class PositionJob implements Job {
 
     private static final String JOB_TYPE = "POSITION_JOB";
 
+    private boolean jobRunning = true;
+    private Long jobCategoryId;
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
         Long categoryId = Long.valueOf(jobDetail.getJobDataMap().get(Constant.POSITION_CATEGORY_KEY).toString());
+        jobCategoryId = categoryId;
         jobDetail.getJobDataMap().put("offset", new AtomicLong(0));
         jobDetail.getJobDataMap().put("totalItemProcessed", new AtomicLong(0));
         log.info("Starting position job with category id - {}", categoryId);
@@ -89,7 +93,7 @@ public class PositionJob implements Job {
         long limit = 100;
         AtomicLong position = new AtomicLong(0);
         try {
-            while (true) {
+            while (jobRunning) {
                 try {
                     if (offset.get() >= 3500) {
                         log.info("Total offset - [{}] of category - [{}], " +
@@ -117,7 +121,9 @@ public class PositionJob implements Job {
                     log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
                     List<Callable<List<PutRecordsRequestEntry>>> callables = new ArrayList<>();
                     for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
-                        callables.add(postPositionRecord(productItem, position, categoryId));
+                        if (jobRunning) {
+                            callables.add(postPositionRecord(productItem, position, categoryId));
+                        }
                     }
                     List<Future<List<PutRecordsRequestEntry>>> futures = jobExecutor.invokeAll(callables);
                     List<PutRecordsRequestEntry> requestEntries = futures.stream().map(it -> {
@@ -269,5 +275,12 @@ public class PositionJob implements Job {
             log.error("Unexpected exception during publish AWS stream message returning NULL", ex);
         }
         return null;
+    }
+
+    @Override
+    public void interrupt() throws UnableToInterruptJobException {
+        log.info("Interrupting Position job with id - {}", jobCategoryId);
+        this.jobRunning = false;
+        jobExecutor.shutdown();
     }
 }

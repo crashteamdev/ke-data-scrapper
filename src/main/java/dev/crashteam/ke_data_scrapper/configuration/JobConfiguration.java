@@ -2,6 +2,7 @@ package dev.crashteam.ke_data_scrapper.configuration;
 
 import dev.crashteam.ke_data_scrapper.job.CacheHandler;
 import dev.crashteam.ke_data_scrapper.job.category.CategoryJob;
+import dev.crashteam.ke_data_scrapper.job.position.CleanPositionJob;
 import dev.crashteam.ke_data_scrapper.job.position.PositionMasterJob;
 import dev.crashteam.ke_data_scrapper.job.product.ProductMasterJob;
 import dev.crashteam.ke_data_scrapper.model.Constant;
@@ -40,6 +41,9 @@ public class JobConfiguration {
     @Value("${app.job.cron.delete-product-cache}")
     private String deleteProductCache;
 
+    @Value("${app.job.cron.clean-position-jobs}")
+    private String cleanPositionJobs;
+
     @PostConstruct
     public void init() {
         scheduleJob(new JobModel(Constant.PRODUCT_MASTER_JOB_NAME, ProductMasterJob.class, productJobCron,
@@ -50,6 +54,8 @@ public class JobConfiguration {
                 Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
         scheduleJob(new JobModel(Constant.DELETE_PRODUCT_CACHE_JOB_NAME, CacheHandler.class, deleteProductCache,
                 Constant.DELETE_PRODUCT_CACHE_TRIGGER_NAME, "cache"));
+        scheduleJob(new JobModel(Constant.CLEAN_POSITIONS_JOB_NAME, CleanPositionJob.class, cleanPositionJobs,
+                Constant.CLEAN_POSITIONS_TRIGGER_NAME, "clean"));
     }
 
     private void scheduleJob(JobModel jobModel) {
