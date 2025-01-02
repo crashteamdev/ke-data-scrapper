@@ -47,7 +47,7 @@ app:
       position-job: 0 0 4 ? * * *
       category-job: 0 0 1 ? * * *
       trim-job: 0 0/60 * * * ?
-      clean-position-jobs: 0 0 15 ? * * *
+      clean-position-jobs: 0 0 15 ? * *
   stream:
     product:
       key: ke-product-stream
