@@ -30,15 +30,7 @@ public class CleanPositionJob {
     public void execute() throws JobExecutionException {
         log.info("Deleting position jobs...");
         try {
-            for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
-                try {
-                    scheduler.interrupt(currentlyExecutingJob.getJobDetail().getKey());
-                    Thread.sleep(20000L);
-                } catch (Exception e) {
-                    log.error("Failed to interrupt executing jobs with exception ", e);
-                }
-            }
-            deletePositionJobs(4);
+            deletePositionJobs(6);
         } catch (Exception e) {
             log.error("Failed to interrupt executing jobs with exception ", e);
         }
