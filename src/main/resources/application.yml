@@ -10,6 +10,8 @@ spring:
     properties:
       org:
         quartz:
+          scheduler:
+            instanceId: AUTO
           threadPool:
             threadCount: 30
             class: org.quartz.simpl.SimpleThreadPool
