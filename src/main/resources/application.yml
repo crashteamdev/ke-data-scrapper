@@ -11,6 +11,7 @@ spring:
       org:
         quartz:
           scheduler:
+            instanceName: KeDataScrapperScheduler
             instanceId: AUTO
           threadPool:
             threadCount: 30
