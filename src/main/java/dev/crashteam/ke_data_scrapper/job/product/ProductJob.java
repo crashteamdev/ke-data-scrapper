@@ -141,7 +141,7 @@ public class ProductJob implements InterruptableJob {
                                     .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                             if (productId == null) continue;
                             if (productDataService.save(productId)) {
-                                callables.add(postProductRecordAsync(productItem));
+                                callables.add(postProductRecordAsync(categoryId, productItem));
                                 //entries.add(postProductRecord(productItem));
                             }
                         }
@@ -231,7 +231,7 @@ public class ProductJob implements InterruptableJob {
                                     .map(KeGQLResponse.CatalogCard::getProductId).orElse(null);
                             if (productId == null) continue;
                             if (productDataService.save(productId)) {
-                                callables.add(postProductRecordAsync(productItem));
+                                callables.add(postProductRecordAsync(categoryId, productItem));
                                 //entries.add(postProductRecord(productItem));
                             }
                         }
@@ -276,7 +276,7 @@ public class ProductJob implements InterruptableJob {
         metricService.incrementFinishJob(JOB_TYPE);
     }
 
-    private PutRecordsRequestEntry postProductRecord(KeGQLResponse.CatalogCardWrapper productItem) {
+    private PutRecordsRequestEntry postProductRecord(Long categoryId, KeGQLResponse.CatalogCardWrapper productItem) {
         Long itemId = Optional.ofNullable(productItem.getCatalogCard())
                 .map(KeGQLResponse.CatalogCard::getProductId)
                 .orElse(null);
@@ -297,14 +297,14 @@ public class ProductJob implements InterruptableJob {
             return null;
         }
 
-        return getAwsMessageEntry(productData.getId().toString(), productData);
+        return getAwsMessageEntry(categoryId, productData.getId().toString(), productData);
     }
 
-    private Callable<PutRecordsRequestEntry> postProductRecordAsync(KeGQLResponse.CatalogCardWrapper productItem) {
-        return () -> postProductRecord(productItem);
+    private Callable<PutRecordsRequestEntry> postProductRecordAsync(Long categoryId, KeGQLResponse.CatalogCardWrapper productItem) {
+        return () -> postProductRecord(categoryId, productItem);
     }
 
-    private PutRecordsRequestEntry getAwsMessageEntry(String partitionKey, KeProduct.ProductData productData) {
+    private PutRecordsRequestEntry getAwsMessageEntry(Long categoryId, String partitionKey, KeProduct.ProductData productData) {
         try {
             Instant now = Instant.now();
             KeProductChange keProductChange = messageMapper.mapToMessage(productData);
@@ -330,7 +330,7 @@ public class ProductJob implements InterruptableJob {
             log.error("Unexpected exception during publish AWS stream message", ex);
         }
         log.warn("AWS message for categoryId - [{}] productId - [{}] is null",
-                productData.getCategory().getId(), productData.getId());
+                categoryId, productData.getId());
         return null;
     }
 

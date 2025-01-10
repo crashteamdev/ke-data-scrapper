@@ -84,7 +84,9 @@ public class SimpleTriggerJobCreatorService {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);
             JobDetail jobDetail = JobBuilder.newJob(jobClass)
-                    .withIdentity(jobKey).build();
+                    .withIdentity(jobKey)
+                    .requestRecovery(true)
+                    .build();
             jobDetail.getJobDataMap().put(idKey, String.valueOf(categoryId));
 
             SimpleTriggerFactoryBean factoryBean = new SimpleTriggerFactoryBean();
