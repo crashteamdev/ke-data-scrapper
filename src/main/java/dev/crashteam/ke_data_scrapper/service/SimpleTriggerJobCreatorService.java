@@ -26,6 +26,18 @@ public class SimpleTriggerJobCreatorService {
 
         Set<Long> ids;
         List<Long> rootIds = Collections.emptyList();
+        try {
+            for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
+                try {
+                    scheduler.interrupt(currentlyExecutingJob.getJobDetail().getKey());
+                    Thread.sleep(20000L);
+                } catch (Exception e) {
+                    log.error("Failed to interrupt executing jobs with exception ", e);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to interrupt executing jobs with exception ", e);
+        }
         if (!allIds) {
             ids = keService.getIds(false);
         } else {
