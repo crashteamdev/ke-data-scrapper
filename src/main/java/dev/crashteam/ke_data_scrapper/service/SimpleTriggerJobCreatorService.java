@@ -1,6 +1,6 @@
 package dev.crashteam.ke_data_scrapper.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.ke.KeCategory;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +37,19 @@ public class SimpleTriggerJobCreatorService {
             }
         } catch (Exception e) {
             log.error("Failed to interrupt executing jobs with exception ", e);
+        }
+        try {
+            Map<Long, Set<Long>> rootIdsMap = keService.getRootIdsMap();
+            for (Long categoryId : rootIdsMap.keySet()) {
+                try {
+                    scheduler.unscheduleJob(new TriggerKey(Constant.PRODUCT_JOB_NAME.formatted(categoryId)));
+                    Thread.sleep(2000L);
+                } catch (Exception e) {
+                    log.error("Failed to unschedule product job executing jobs with exception ", e);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to unschedule product job with exception ", e);
         }
         if (!allIds) {
             ids = keService.getIds(false);
