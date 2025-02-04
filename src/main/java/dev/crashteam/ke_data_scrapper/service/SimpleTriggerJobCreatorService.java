@@ -25,7 +25,6 @@ public class SimpleTriggerJobCreatorService {
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
 
         Set<Long> ids;
-        List<Long> rootIds = Collections.emptyList();
         try {
             for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
                 try {
@@ -55,7 +54,6 @@ public class SimpleTriggerJobCreatorService {
             ids = keService.getIds(false);
         } else {
             ids = keService.getAllIds();
-            rootIds = keService.getRootCategories().stream().map(KeCategory.Data::getId).toList();
         }
         for (Long categoryId : ids) {
             String name = jobName.formatted(categoryId);
@@ -72,10 +70,6 @@ public class SimpleTriggerJobCreatorService {
             factoryBean.setName(name);
             factoryBean.setMisfireInstruction(MISFIRE_INSTRUCTION_FIRE_NOW);
             factoryBean.afterPropertiesSet();
-            if (!CollectionUtils.isEmpty(rootIds)
-                    && rootIds.stream().anyMatch(it -> it.equals(categoryId))) {
-                factoryBean.setPriority(10);
-            }
 
             try {
                 boolean exists = scheduler.checkExists(jobKey);
