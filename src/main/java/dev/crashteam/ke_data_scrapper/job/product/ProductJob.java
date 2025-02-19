@@ -285,6 +285,7 @@ public class ProductJob implements InterruptableJob {
             return null;
         }
         KeProduct.ProductData productData = jobUtilService.getProductData(itemId);
+        jobUtilService.putCachedProductData(productData, itemId);
 
         if (productData == null) {
             log.warn("Product data with id - {} returned null, continue with next item, if it exists...", itemId);

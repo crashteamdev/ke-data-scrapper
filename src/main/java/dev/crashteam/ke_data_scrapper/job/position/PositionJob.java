@@ -95,7 +95,7 @@ public class PositionJob implements InterruptableJob {
         try {
             while (jobRunning) {
                 try {
-                    if (offset.get() >= 3500) {
+                    if (offset.get() >= 3000) {
                         log.info("Total offset - [{}] of category - [{}], " +
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
@@ -152,8 +152,8 @@ public class PositionJob implements InterruptableJob {
             jobExecutor.shutdown();
         }
         Instant end = Instant.now();
-        log.info("Position job - Finished collecting for category id - {}, in {} seconds", categoryId,
-                Duration.between(start, end).toSeconds());
+        log.info("Position job - Finished collecting for category id - {}, total items processed - {} in {} seconds",
+                categoryId, totalItemProcessed.get(), Duration.between(start, end).toSeconds());
         metricService.incrementFinishJob(JOB_TYPE);
     }
 

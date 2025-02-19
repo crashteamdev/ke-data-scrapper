@@ -6,10 +6,10 @@ import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
-import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
@@ -54,6 +54,11 @@ public class JobUtilService {
     @Cacheable(value = "productCache")
     public CachedProductData getCachedProductData(Long itemId) {
         return KeProductToCachedProduct.toCachedData(getProductData(itemId));
+    }
+
+    @CachePut(value = "productCache", key = "#itemId")
+    public CachedProductData putCachedProductData(KeProduct.ProductData productData, Long itemId) {
+        return KeProductToCachedProduct.toCachedData(productData);
     }
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {

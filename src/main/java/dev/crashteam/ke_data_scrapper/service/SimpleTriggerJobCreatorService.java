@@ -1,16 +1,17 @@
 package dev.crashteam.ke_data_scrapper.service;
 
-import dev.crashteam.ke_data_scrapper.model.Constant;
-import dev.crashteam.ke_data_scrapper.model.ke.KeCategory;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.quartz.SimpleTriggerFactoryBean;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
 import static org.quartz.SimpleTrigger.MISFIRE_INSTRUCTION_FIRE_NOW;
 
@@ -21,35 +22,15 @@ public class SimpleTriggerJobCreatorService {
 
     private final KeService keService;
     private final Scheduler scheduler;
+    private final JdbcTemplate jdbcTemplate;
+
+    private static final String CALL_DELETE_POSITION_JOBS =
+            "CALL deleteProductJobs()";
 
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
 
         Set<Long> ids;
-        try {
-            for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
-                try {
-                    scheduler.interrupt(currentlyExecutingJob.getJobDetail().getKey());
-                    Thread.sleep(20000L);
-                } catch (Exception e) {
-                    log.error("Failed to interrupt executing jobs with exception ", e);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to interrupt executing jobs with exception ", e);
-        }
-        try {
-            Map<Long, Set<Long>> rootIdsMap = keService.getRootIdsMap();
-            for (Long categoryId : rootIdsMap.keySet()) {
-                try {
-                    scheduler.unscheduleJob(new TriggerKey(Constant.PRODUCT_JOB_NAME.formatted(categoryId)));
-                    Thread.sleep(2000L);
-                } catch (Exception e) {
-                    log.error("Failed to unschedule product job executing jobs with exception ", e);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to unschedule product job with exception ", e);
-        }
+        deleteProductJobs(6);
         if (!allIds) {
             ids = keService.getIds(false);
         } else {
@@ -125,6 +106,22 @@ public class SimpleTriggerJobCreatorService {
             }
         });
 
+    }
+
+    private void deleteProductJobs(int attempt) {
+        if (attempt == 0) return;
+        try {
+            jdbcTemplate.call(con -> con.prepareCall(CALL_DELETE_POSITION_JOBS), Collections.emptyList());
+        } catch (Exception e) {
+            log.error("Error while deleting position jobs, retrying", e);
+            try {
+                Thread.sleep(4000L);
+            } catch (InterruptedException ex) {
+                log.error("Interrupt exception", ex);
+            }
+            attempt = attempt - 1;
+            deleteProductJobs(attempt);
+        }
     }
 
 }
