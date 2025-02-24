@@ -30,6 +30,18 @@ public class SimpleTriggerJobCreatorService {
     public void createJob(String jobName, String idKey, Class<? extends Job> jobClass, boolean allIds) {
 
         Set<Long> ids;
+        try {
+            for (JobExecutionContext currentlyExecutingJob : scheduler.getCurrentlyExecutingJobs()) {
+                try {
+                    scheduler.interrupt(currentlyExecutingJob.getJobDetail().getKey());
+                    Thread.sleep(20000L);
+                } catch (Exception e) {
+                    log.error("Failed to interrupt executing jobs with exception ", e);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to interrupt executing jobs with exception ", e);
+        }
         deleteProductJobs(6);
         if (!allIds) {
             ids = keService.getIds(false);
