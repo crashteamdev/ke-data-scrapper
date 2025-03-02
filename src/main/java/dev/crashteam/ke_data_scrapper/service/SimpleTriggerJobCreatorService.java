@@ -23,6 +23,7 @@ public class SimpleTriggerJobCreatorService {
     private final KeService keService;
     private final Scheduler scheduler;
     private final JdbcTemplate jdbcTemplate;
+    private final JobUtilService jobUtilService;
 
     private static final String CALL_DELETE_POSITION_JOBS =
             "CALL deleteProductJobs()";
@@ -42,6 +43,7 @@ public class SimpleTriggerJobCreatorService {
         } catch (Exception e) {
             log.error("Failed to interrupt executing jobs with exception ", e);
         }
+        jobUtilService.evictProductCache();
         deleteProductJobs(6);
         if (!allIds) {
             ids = keService.getIds(false);

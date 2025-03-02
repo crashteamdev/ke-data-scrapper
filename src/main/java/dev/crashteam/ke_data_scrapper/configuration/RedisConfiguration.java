@@ -66,7 +66,7 @@ public class RedisConfiguration {
         return builder -> builder
                 .withCacheConfiguration("productCache",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                                .entryTtl(Duration.ofHours(8)));
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                                        .fromSerializer(new GenericJackson2JsonRedisSerializer())));
     }
 }

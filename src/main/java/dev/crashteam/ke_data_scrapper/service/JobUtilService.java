@@ -9,6 +9,7 @@ import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.retry.RetryCallback;
@@ -60,6 +61,9 @@ public class JobUtilService {
     public CachedProductData putCachedProductData(KeProduct.ProductData productData, Long itemId) {
         return KeProductToCachedProduct.toCachedData(productData);
     }
+
+    @CacheEvict(value = "productCache", allEntries = true)
+    public void evictProductCache() {}
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
         Instant start = Instant.now();
