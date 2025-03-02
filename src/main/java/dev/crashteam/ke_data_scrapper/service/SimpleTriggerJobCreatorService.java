@@ -43,7 +43,6 @@ public class SimpleTriggerJobCreatorService {
         } catch (Exception e) {
             log.error("Failed to interrupt executing jobs with exception ", e);
         }
-        jobUtilService.evictProductCache();
         deleteProductJobs(6);
         if (!allIds) {
             ids = keService.getIds(false);
@@ -94,6 +93,7 @@ public class SimpleTriggerJobCreatorService {
         } catch (Exception e) {
             log.error("Failed to interrupt executing jobs with exception ", e);
         }
+        jobUtilService.evictProductCache();
         rootIdsMap.forEach((categoryId, children) -> {
             String name = jobName.formatted(categoryId);
             JobKey jobKey = new JobKey(name);
