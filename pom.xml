@@ -17,7 +17,7 @@
         <exposed.ports>${server.port} ${management.port}</exposed.ports>
         <java.version>21</java.version>
         <quartz-redis-jobstore.version>1.2.0</quartz-redis-jobstore.version>
-        <spring-retry.version>1.2.5.RELEASE</spring-retry.version>
+        <spring-retry.version>2.0.11</spring-retry.version>
         <spring-aspects.version>5.2.8.RELEASE</spring-aspects.version>
         <protobuf.version>3.21.12</protobuf.version>
     </properties>
