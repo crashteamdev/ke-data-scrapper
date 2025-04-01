@@ -2,18 +2,17 @@ package dev.crashteam.ke_data_scrapper.configuration;
 
 import dev.crashteam.ke_data_scrapper.job.CacheHandler;
 import dev.crashteam.ke_data_scrapper.job.category.CategoryJob;
-import dev.crashteam.ke_data_scrapper.job.position.CleanPositionJob;
 import dev.crashteam.ke_data_scrapper.job.position.PositionMasterJob;
 import dev.crashteam.ke_data_scrapper.job.product.ProductMasterJob;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.job.JobModel;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
-import javax.annotation.PostConstruct;
 import java.util.TimeZone;
 
 @Slf4j

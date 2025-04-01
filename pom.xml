@@ -5,7 +5,7 @@
     <parent>
         <groupId>dev.crashteam</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>1.0.7</version>
+        <version>2.0.0</version>
     </parent>
     <artifactId>ke-data-scrapper</artifactId>
     <version>0.0.1</version>
@@ -15,7 +15,7 @@
         <server.port>8022</server.port>
         <management.port>8023</management.port>
         <exposed.ports>${server.port} ${management.port}</exposed.ports>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <quartz-redis-jobstore.version>1.2.0</quartz-redis-jobstore.version>
         <spring-retry.version>1.2.5.RELEASE</spring-retry.version>
         <spring-aspects.version>5.2.8.RELEASE</spring-aspects.version>
