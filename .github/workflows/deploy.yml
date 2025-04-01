@@ -10,6 +10,9 @@ jobs:
   deploy:
     uses: crashteamdev/jvm-workflows/.github/workflows/maven-service-deploy.yml@v1
     with:
+      java-version: '21'
       registry-username: ${{ github.actor }}
+      github-user: vitaxa
     secrets:
       registry-access-token: ${{ secrets.GITHUB_TOKEN }}
+      github-pat: ${{ secrets.CRASHTEAM_REPO_TOKEN }}
