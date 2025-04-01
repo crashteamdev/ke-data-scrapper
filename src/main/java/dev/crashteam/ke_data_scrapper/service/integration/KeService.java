@@ -1,5 +1,6 @@
 package dev.crashteam.ke_data_scrapper.service.integration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.crashteam.ke_data_scrapper.exception.CategoryRequestException;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
@@ -151,11 +152,21 @@ public class KeService {
         return ids;
     }
 
-    @SneakyThrows
+    public KeGQLResponse getLightGqlSearchResponse(String categoryId, long offset, long limit) {
+        String query = "query getMakeSearch($queryInput: MakeSearchQueryInput!) { makeSearch(query: $queryInput) { items { catalogCard { __typename ...SkuGroupCardFragment ... on ProductCard { ...DefaultCardFragment __typename } } bidId __typename } total }}fragment SkuGroupCardFragment on SkuGroupCard { ...DefaultCardFragment characteristicValues { id value title characteristic { values { id title value __typename } title id __typename } __typename } __typename}fragment DefaultCardFragment on CatalogCard { productId __typename}";
+        return getGQLSearchResponse(categoryId, query, offset, limit);
+    }
+
     public KeGQLResponse getGQLSearchResponse(String categoryId, long offset, long limit) {
         log.info("Starting gql catalog search with values: [categoryId - {}] , [offset - {}], [limit - {}]"
                 , categoryId, offset, limit);
         String query = "query getMakeSearch($queryInput: MakeSearchQueryInput!) {\n  makeSearch(query: $queryInput) {\n    id\n    queryId\n    queryText\n    category {\n      ...CategoryShortFragment\n      __typename\n    }\n    categoryTree {\n      category {\n        ...CategoryFragment\n        __typename\n      }\n      total\n      __typename\n    }\n    items {\n      catalogCard {\n        __typename\n        ...SkuGroupCardFragment\n      }\n      __typename\n    }\n    facets {\n      ...FacetFragment\n      __typename\n    }\n    total\n    mayHaveAdultContent\n    categoryFullMatch\n    __typename\n  }\n}\n\nfragment FacetFragment on Facet {\n  filter {\n    id\n    title\n    type\n    measurementUnit\n    description\n    __typename\n  }\n  buckets {\n    filterValue {\n      id\n      description\n      image\n      name\n      __typename\n    }\n    total\n    __typename\n  }\n  range {\n    min\n    max\n    __typename\n  }\n  __typename\n}\n\nfragment CategoryFragment on Category {\n  id\n  icon\n  parent {\n    id\n    __typename\n  }\n  seo {\n    header\n    metaTag\n    __typename\n  }\n  title\n  adult\n  __typename\n}\n\nfragment CategoryShortFragment on Category {\n  id\n  parent {\n    id\n    title\n    __typename\n  }\n  title\n  __typename\n}\n\nfragment SkuGroupCardFragment on SkuGroupCard {\n  ...DefaultCardFragment\n  photos {\n    key\n    link(trans: PRODUCT_540) {\n      high\n      low\n      __typename\n    }\n    previewLink: link(trans: PRODUCT_240) {\n      high\n      low\n      __typename\n    }\n    __typename\n  }\n  badges {\n    ... on BottomTextBadge {\n      backgroundColor\n      description\n      id\n      link\n      text\n      textColor\n      __typename\n    }\n    __typename\n  }\n  characteristicValues {\n    id\n    value\n    title\n    characteristic {\n      values {\n        id\n        title\n        value\n        __typename\n      }\n      title\n      id\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment DefaultCardFragment on CatalogCard {\n  adult\n  favorite\n  feedbackQuantity\n  id\n  minFullPrice\n  minSellPrice\n  offer {\n    due\n    icon\n    text\n    textColor\n    __typename\n  }\n  badges {\n    backgroundColor\n    text\n    textColor\n    __typename\n  }\n  ordersQuantity\n  productId\n  rating\n  title\n  __typename\n}";
+        return getGQLSearchResponse(categoryId, query, offset, limit);
+    }
+
+    public KeGQLResponse getGQLSearchResponse(String categoryId, String query, long offset, long limit) {
+        log.info("Starting gql catalog search with values: [categoryId - {}] , [offset - {}], [limit - {}]"
+                , categoryId, offset, limit);
         KeSearchQuery.Variables variables = KeSearchQuery.Variables.builder()
                 .queryInput(KeSearchQuery.QueryInput.builder()
                         .categoryId(categoryId)
@@ -172,7 +183,12 @@ public class KeService {
                 .query(query)
                 .build();
         ObjectMapper objectMapper = new ObjectMapper();
-        byte[] bytes = objectMapper.writeValueAsBytes(searchQuery);
+        byte[] bytes;
+        try {
+            bytes = objectMapper.writeValueAsBytes(searchQuery);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         String base64Body = Base64.getEncoder().encodeToString(bytes);
         ProxyRequestParams.ContextValue headers = ProxyRequestParams.ContextValue.builder()
                 .key("headers")

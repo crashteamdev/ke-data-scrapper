@@ -63,13 +63,15 @@ public class JobUtilService {
     }
 
     @CacheEvict(value = "productCache", allEntries = true)
-    public void evictProductCache() {}
+    public void evictProductCache() {
+        log.info("Deleting product cache");
+    }
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
         Instant start = Instant.now();
         KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
             try {
-                KeGQLResponse response = keService.getGQLSearchResponse(String.valueOf(categoryId), offset.get(), limit);
+                KeGQLResponse response = keService.getLightGqlSearchResponse(String.valueOf(categoryId), offset.get(), limit);
                 if (!CollectionUtils.isEmpty(response.getErrors())) {
                     for (KeGQLResponse.GQLError error : response.getErrors()) {
                         if (error.getMessage().contains("offset")) {
@@ -101,7 +103,7 @@ public class JobUtilService {
         Instant start = Instant.now();
         KeGQLResponse gqlResponse = retryTemplate.execute((RetryCallback<KeGQLResponse, KeGqlRequestException>) retryContext -> {
             try {
-                KeGQLResponse response = keService.getGQLSearchResponse(String.valueOf(categoryId), offset.get(), limit);
+                KeGQLResponse response = keService.getLightGqlSearchResponse(String.valueOf(categoryId), offset.get(), limit);
                 if (!CollectionUtils.isEmpty(response.getErrors())) {
                     for (KeGQLResponse.GQLError error : response.getErrors()) {
                         if (error.getMessage().contains("offset")) {
