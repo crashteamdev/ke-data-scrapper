@@ -9,7 +9,7 @@ import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
-import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
+import dev.crashteam.ke_data_scrapper.model.cache.GraphQlCacheData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
@@ -100,8 +100,8 @@ public class PositionJob implements InterruptableJob {
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
                     }
-                    KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
-                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
+                    GraphQlCacheData gqlResponse = jobUtilService.getCachedGraphData(offset, categoryId, limit);
+                    if (gqlResponse == null) {
                         break;
                     }
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
@@ -111,7 +111,7 @@ public class PositionJob implements InterruptableJob {
                     }
                     var productItems = Optional.ofNullable(gqlResponse.getData()
                                     .getMakeSearch())
-                            .map(KeGQLResponse.MakeSearch::getItems)
+                            .map(GraphQlCacheData.MakeSearch::getItems)
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
                     if (CollectionUtils.isEmpty(productItems)) {
@@ -120,7 +120,7 @@ public class PositionJob implements InterruptableJob {
                     }
                     log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
                     List<Callable<List<PutRecordsRequestEntry>>> callables = new ArrayList<>();
-                    for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
+                    for (GraphQlCacheData.CatalogCardWrapper productItem : productItems) {
                         if (jobRunning) {
                             callables.add(postPositionRecord(productItem, position, categoryId));
                         }
@@ -157,13 +157,13 @@ public class PositionJob implements InterruptableJob {
         metricService.incrementFinishJob(JOB_TYPE);
     }
 
-    private Callable<List<PutRecordsRequestEntry>> postPositionRecord(KeGQLResponse.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {
+    private Callable<List<PutRecordsRequestEntry>> postPositionRecord(GraphQlCacheData.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {
         return () -> {
             position.incrementAndGet();
-            Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId)
+            Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(GraphQlCacheData.CatalogCard::getProductId)
                     .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
-            KeGQLResponse.CatalogCard productItemCard = productItem.getCatalogCard();
-            List<KeGQLResponse.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
+            GraphQlCacheData.CatalogCard productItemCard = productItem.getCatalogCard();
+            List<GraphQlCacheData.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
             CachedProductData productResponse = jobUtilService.getCachedProductData(itemId);
             if (productResponse == null) {
                 log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));

@@ -9,6 +9,7 @@ import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
 import dev.crashteam.ke_data_scrapper.mapper.ProductCorruptedException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
+import dev.crashteam.ke_data_scrapper.model.cache.GraphQlCacheData;
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
@@ -115,6 +116,8 @@ public class ProductJob implements InterruptableJob {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    jobUtilService.putCachedGraphData(gqlResponse, offset, categoryId, limit);
+                    GraphQlCacheData cachedGraphData = jobUtilService.getCachedGraphData(offset, categoryId, limit);
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
                         log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
                                 "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
@@ -206,6 +209,7 @@ public class ProductJob implements InterruptableJob {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    jobUtilService.putCachedGraphData(gqlResponse, offset, categoryId, limit);
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
                         log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
                                 "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
