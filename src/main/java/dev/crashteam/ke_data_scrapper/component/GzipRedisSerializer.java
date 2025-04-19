@@ -48,24 +48,25 @@ public class GzipRedisSerializer implements RedisSerializer<Object> {
     }
 
     private byte[] compress(byte[] content) {
-        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-             GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
             gzipOutputStream.write(content);
-            return byteArrayOutputStream.toByteArray();
+            gzipOutputStream.finish();
+            gzipOutputStream.flush();
         } catch (IOException e) {
             throw new SerializationException("Unable to compress data", e);
         }
+        return byteArrayOutputStream.toByteArray();
     }
 
     private byte[] decompress(byte[] contentBytes) {
-
         try (InputStream inputStream = new GZIPInputStream(new ByteArrayInputStream(contentBytes))) {
             try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                 inputStream.transferTo(outputStream);
                 return outputStream.toByteArray();
             }
         } catch (Exception e) {
-            throw new SerializationException("Unable to compress data", e);
+            throw new SerializationException("Unable to decompress data", e);
         }
     }
 }
