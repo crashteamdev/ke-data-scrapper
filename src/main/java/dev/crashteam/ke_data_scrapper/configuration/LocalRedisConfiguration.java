@@ -62,15 +62,15 @@ public class LocalRedisConfiguration {
     }
 
     @Bean
-    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer(ObjectMapper objectMapper) {
+    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return builder -> builder
                 .withCacheConfiguration("productCache",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer())))
+                                        .fromSerializer(new GzipRedisSerializer())))
                 .withCacheConfiguration("graphQlCache",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GzipRedisSerializer(objectMapper))));
+                                        .fromSerializer(new GzipRedisSerializer())));
     }
 }

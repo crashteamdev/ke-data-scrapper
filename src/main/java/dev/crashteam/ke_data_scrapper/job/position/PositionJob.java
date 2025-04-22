@@ -10,10 +10,12 @@ import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.cache.GraphQlCacheData;
+import dev.crashteam.ke_data_scrapper.model.ke.KeCategory;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.MetricService;
+import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
@@ -35,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -59,6 +62,9 @@ public class PositionJob implements InterruptableJob {
 
     @Autowired
     MetricService metricService;
+
+    @Autowired
+    KeService keService;
 
     @Value("${app.stream.position.key}")
     public String streamKey;
@@ -92,6 +98,8 @@ public class PositionJob implements InterruptableJob {
         AtomicLong totalItemProcessed = (AtomicLong) jobDetail.getJobDataMap().get("totalItemProcessed");
         long limit = 100;
         AtomicLong position = new AtomicLong(0);
+        List<Long> rootCategories = keService.getRootCategories()
+                .stream().map(KeCategory.Data::getId).toList();
         try {
             while (jobRunning) {
                 try {
@@ -100,7 +108,12 @@ public class PositionJob implements InterruptableJob {
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
                     }
-                    GraphQlCacheData gqlResponse = jobUtilService.getCachedGraphData(offset, categoryId, limit);
+                    GraphQlCacheData gqlResponse;
+                    if (rootCategories.stream().anyMatch(categoryId::equals)) {
+                        gqlResponse = jobUtilService.getCachedGraphData(offset, categoryId, limit);
+                    } else {
+                        gqlResponse = jobUtilService.getSimplifiedGraphData(offset, categoryId, limit);
+                    }
                     if (gqlResponse == null) {
                         break;
                     }

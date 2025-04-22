@@ -9,7 +9,6 @@ import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.mapper.KeProductToMessageMapper;
 import dev.crashteam.ke_data_scrapper.mapper.ProductCorruptedException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
-import dev.crashteam.ke_data_scrapper.model.cache.GraphQlCacheData;
 import dev.crashteam.ke_data_scrapper.model.dto.KeProductMessage;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
@@ -22,7 +21,6 @@ import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +94,6 @@ public class ProductJob implements InterruptableJob {
     private static final String JOB_TYPE = "PRODUCT_JOB";
 
     @Override
-    @SneakyThrows
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
@@ -117,7 +114,6 @@ public class ProductJob implements InterruptableJob {
                         break;
                     }
                     jobUtilService.putCachedGraphData(gqlResponse, offset, categoryId, limit);
-                    GraphQlCacheData cachedGraphData = jobUtilService.getCachedGraphData(offset, categoryId, limit);
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
                         log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
                                 "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);

@@ -74,6 +74,10 @@ public class JobUtilService {
         return KeGraphToCachedGraph.keGQLResponseToCachedGraph(getResponse(offset, categoryId, limit));
     }
 
+    public GraphQlCacheData getSimplifiedGraphData(AtomicLong offset, Long categoryId, Long limit) {
+        return KeGraphToCachedGraph.keGQLResponseToCachedGraph(getResponse(offset, categoryId, limit));
+    }
+
     @CachePut(value = "graphQlCache", key = "#offset + #categoryId + #limit")
     public GraphQlCacheData putCachedGraphData(KeGQLResponse keGQLResponse, AtomicLong offset, Long categoryId, Long limit) {
         return KeGraphToCachedGraph.keGQLResponseToCachedGraph(keGQLResponse);

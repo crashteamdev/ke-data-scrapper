@@ -38,6 +38,12 @@ public class JobConfiguration {
     public void init() {
         scheduleJob(new JobModel(Constant.PRODUCT_MASTER_JOB_NAME, ProductMasterJob.class, productJobCron,
                 Constant.PRODUCT_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel(Constant.POSITION_MASTER_JOB_NAME, PositionMasterJob.class, positionJobCron,
+                Constant.POSITION_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel(Constant.CATEGORY_MASTER_JOB_NAME, CategoryJob.class, categoryJobCron,
+                Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
+        scheduleJob(new JobModel(Constant.DELETE_PRODUCT_CACHE_JOB_NAME, CacheHandler.class, deleteProductCache,
+                Constant.DELETE_PRODUCT_CACHE_TRIGGER_NAME, "cache"));
 
     }
 

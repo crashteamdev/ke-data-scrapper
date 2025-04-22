@@ -1,9 +1,6 @@
 package dev.crashteam.ke_data_scrapper.component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.io.IOUtils;
-import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.SerializationException;
 
 import java.io.ByteArrayInputStream;
@@ -13,38 +10,16 @@ import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class GzipRedisSerializer implements RedisSerializer<Object> {
-
-    private final ObjectMapper objectMapper;
-
-    public GzipRedisSerializer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
+public class GzipRedisSerializer extends JdkSerializationRedisSerializer {
 
     @Override
     public Object deserialize(byte[] bytes) {
-        return deserializeFromBytes(decompress(bytes));
+        return super.deserialize(decompress(bytes));
     }
 
     @Override
     public byte[] serialize(Object object) {
-        return compress(serializeToBytes(object));
-    }
-
-    private Object deserializeFromBytes(byte[] bytes) {
-        try {
-            return objectMapper.readValue(bytes, Object.class);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to deserialize from bytes", e);
-        }
-    }
-
-    private byte[] serializeToBytes(Object object) {
-        try {
-            return objectMapper.writeValueAsBytes(object);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Unable to write object as bytes", e);
-        }
+        return compress(super.serialize(object));
     }
 
     private byte[] compress(byte[] content) {
