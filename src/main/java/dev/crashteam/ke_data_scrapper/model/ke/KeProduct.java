@@ -10,20 +10,20 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class KeProduct {
+public class KeProduct implements Serializable {
 
     private Payload payload;
     private List<ProductError> errors;
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Payload {
+    public static class Payload implements Serializable {
         private ProductData data;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ProductData {
+    public static class ProductData implements Serializable {
         private Long id;
         private String title;
         private ProductCategory category;
@@ -56,14 +56,14 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ProductPhoto {
+    public static class ProductPhoto implements Serializable {
         private String color;
         private String photoKey;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class CharacteristicsData {
+    public static class CharacteristicsData implements Serializable {
         private Long id;
         private String title;
         private List<Characteristic> values;
@@ -71,7 +71,7 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Characteristic {
+    public static class Characteristic implements Serializable{
         private Long id;
         private String title;
         private String value;
@@ -79,7 +79,7 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SkuData {
+    public static class SkuData implements Serializable {
         private Long id;
         private List<ScuCharacteristic> characteristics;
         private Long availableAmount;
@@ -93,14 +93,14 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ScuCharacteristic {
+    public static class ScuCharacteristic implements Serializable {
         private Integer charIndex;
         private Integer valueIndex;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ProductSeller {
+    public static class ProductSeller implements Serializable {
         private Long id;
         private String title;
         private String link;
@@ -115,7 +115,7 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Feedback {
+    public static class Feedback implements Serializable {
         private Long reviewId;
         private Long productId;
         private Long date;
@@ -130,7 +130,7 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class FeedBackReply {
+    public static class FeedBackReply implements Serializable {
         private Long id;
         private Long date;
         private Boolean edited;
@@ -140,7 +140,7 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ProductError {
+    public static class ProductError implements Serializable {
         private String code;
         private String message;
         private String detailMessage;
@@ -148,14 +148,14 @@ public class KeProduct {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Contact {
+    public static class Contact implements Serializable {
         private String type;
         private String value;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Restriction {
+    public static class Restriction implements Serializable {
         private Long restrictedAmount;
         private Long boughtAmount;
         private Boolean restricted;

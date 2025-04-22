@@ -21,7 +21,6 @@ import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +94,6 @@ public class ProductJob implements InterruptableJob {
     private static final String JOB_TYPE = "PRODUCT_JOB";
 
     @Override
-    @SneakyThrows
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         Instant start = Instant.now();
         JobDetail jobDetail = jobExecutionContext.getJobDetail();
@@ -115,6 +113,7 @@ public class ProductJob implements InterruptableJob {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    jobUtilService.putCachedGraphData(gqlResponse, offset, categoryId, limit);
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
                         log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
                                 "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);
@@ -206,6 +205,7 @@ public class ProductJob implements InterruptableJob {
                     if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
                         break;
                     }
+                    jobUtilService.putCachedGraphData(gqlResponse, offset, categoryId, limit);
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
                         log.info("Total GQL response items - [{}] less or equal than total processed items - [{}] of category - [{}], " +
                                 "skipping further parsing... ", gqlResponse.getData().getMakeSearch().getTotal(), totalItemProcessed.get(), categoryId);

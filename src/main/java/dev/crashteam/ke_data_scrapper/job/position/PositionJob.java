@@ -9,11 +9,13 @@ import dev.crashteam.ke.scrapper.data.v1.KeScrapperEvent;
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
 import dev.crashteam.ke_data_scrapper.model.Constant;
 import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
-import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
+import dev.crashteam.ke_data_scrapper.model.cache.GraphQlCacheData;
+import dev.crashteam.ke_data_scrapper.model.ke.KeCategory;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.model.stream.AwsStreamMessage;
 import dev.crashteam.ke_data_scrapper.service.JobUtilService;
 import dev.crashteam.ke_data_scrapper.service.MetricService;
+import dev.crashteam.ke_data_scrapper.service.integration.KeService;
 import dev.crashteam.ke_data_scrapper.service.stream.AwsStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.service.stream.RedisStreamMessagePublisher;
 import dev.crashteam.ke_data_scrapper.util.ScrapperUtils;
@@ -35,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -59,6 +62,9 @@ public class PositionJob implements InterruptableJob {
 
     @Autowired
     MetricService metricService;
+
+    @Autowired
+    KeService keService;
 
     @Value("${app.stream.position.key}")
     public String streamKey;
@@ -92,6 +98,8 @@ public class PositionJob implements InterruptableJob {
         AtomicLong totalItemProcessed = (AtomicLong) jobDetail.getJobDataMap().get("totalItemProcessed");
         long limit = 100;
         AtomicLong position = new AtomicLong(0);
+        List<Long> rootCategories = keService.getRootCategories()
+                .stream().map(KeCategory.Data::getId).toList();
         try {
             while (jobRunning) {
                 try {
@@ -100,8 +108,13 @@ public class PositionJob implements InterruptableJob {
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
                     }
-                    KeGQLResponse gqlResponse = jobUtilService.getResponse(jobExecutionContext, offset, categoryId, limit);
-                    if (gqlResponse == null || !CollectionUtils.isEmpty(gqlResponse.getErrors())) {
+                    GraphQlCacheData gqlResponse;
+                    if (rootCategories.stream().anyMatch(categoryId::equals)) {
+                        gqlResponse = jobUtilService.getCachedGraphData(offset, categoryId, limit);
+                    } else {
+                        gqlResponse = jobUtilService.getSimplifiedGraphData(offset, categoryId, limit);
+                    }
+                    if (gqlResponse == null) {
                         break;
                     }
                     if (gqlResponse.getData().getMakeSearch().getTotal() <= totalItemProcessed.get()) {
@@ -111,7 +124,7 @@ public class PositionJob implements InterruptableJob {
                     }
                     var productItems = Optional.ofNullable(gqlResponse.getData()
                                     .getMakeSearch())
-                            .map(KeGQLResponse.MakeSearch::getItems)
+                            .map(GraphQlCacheData.MakeSearch::getItems)
                             .filter(it -> !CollectionUtils.isEmpty(it))
                             .orElse(Collections.emptyList());
                     if (CollectionUtils.isEmpty(productItems)) {
@@ -120,7 +133,7 @@ public class PositionJob implements InterruptableJob {
                     }
                     log.info("Iterate through products for position itemsCount={};categoryId={}", productItems.size(), categoryId);
                     List<Callable<List<PutRecordsRequestEntry>>> callables = new ArrayList<>();
-                    for (KeGQLResponse.CatalogCardWrapper productItem : productItems) {
+                    for (GraphQlCacheData.CatalogCardWrapper productItem : productItems) {
                         if (jobRunning) {
                             callables.add(postPositionRecord(productItem, position, categoryId));
                         }
@@ -157,13 +170,13 @@ public class PositionJob implements InterruptableJob {
         metricService.incrementFinishJob(JOB_TYPE);
     }
 
-    private Callable<List<PutRecordsRequestEntry>> postPositionRecord(KeGQLResponse.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {
+    private Callable<List<PutRecordsRequestEntry>> postPositionRecord(GraphQlCacheData.CatalogCardWrapper productItem, AtomicLong position, Long categoryId) {
         return () -> {
             position.incrementAndGet();
-            Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(KeGQLResponse.CatalogCard::getProductId)
+            Long itemId = Optional.ofNullable(productItem.getCatalogCard()).map(GraphQlCacheData.CatalogCard::getProductId)
                     .orElseThrow(() -> new KeGqlRequestException("Catalog card can't be null"));
-            KeGQLResponse.CatalogCard productItemCard = productItem.getCatalogCard();
-            List<KeGQLResponse.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
+            GraphQlCacheData.CatalogCard productItemCard = productItem.getCatalogCard();
+            List<GraphQlCacheData.CharacteristicValue> productItemCardCharacteristics = productItemCard.getCharacteristicValues();
             CachedProductData productResponse = jobUtilService.getCachedProductData(itemId);
             if (productResponse == null) {
                 log.info("Product data with id - %s returned null, continue with next item, if it exists...".formatted(itemId));

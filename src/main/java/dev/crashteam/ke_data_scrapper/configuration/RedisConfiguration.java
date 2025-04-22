@@ -1,6 +1,7 @@
 package dev.crashteam.ke_data_scrapper.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.crashteam.ke_data_scrapper.component.GzipRedisSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -67,6 +68,10 @@ public class RedisConfiguration {
                 .withCacheConfiguration("productCache",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer())));
+                                        .fromSerializer(new GzipRedisSerializer())))
+                .withCacheConfiguration("graphQlCache",
+                        RedisCacheConfiguration.defaultCacheConfig()
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                                        .fromSerializer(new GzipRedisSerializer())));
     }
 }

@@ -1,4 +1,4 @@
-package dev.crashteam.ke_data_scrapper.mapper;
+package dev.crashteam.ke_data_scrapper.mapper.cache;
 
 import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;

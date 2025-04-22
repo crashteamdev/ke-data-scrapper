@@ -44,6 +44,7 @@ public class JobConfiguration {
                 Constant.CATEGORY_MASTER_JOB_TRIGGER, Constant.MASTER_JOB_GROUP));
         scheduleJob(new JobModel(Constant.DELETE_PRODUCT_CACHE_JOB_NAME, CacheHandler.class, deleteProductCache,
                 Constant.DELETE_PRODUCT_CACHE_TRIGGER_NAME, "cache"));
+
     }
 
     private void scheduleJob(JobModel jobModel) {

@@ -1,8 +1,10 @@
 package dev.crashteam.ke_data_scrapper.service;
 
 import dev.crashteam.ke_data_scrapper.exception.KeGqlRequestException;
-import dev.crashteam.ke_data_scrapper.mapper.KeProductToCachedProduct;
+import dev.crashteam.ke_data_scrapper.mapper.cache.KeGraphToCachedGraph;
+import dev.crashteam.ke_data_scrapper.mapper.cache.KeProductToCachedProduct;
 import dev.crashteam.ke_data_scrapper.model.cache.CachedProductData;
+import dev.crashteam.ke_data_scrapper.model.cache.GraphQlCacheData;
 import dev.crashteam.ke_data_scrapper.model.ke.KeGQLResponse;
 import dev.crashteam.ke_data_scrapper.model.ke.KeProduct;
 import dev.crashteam.ke_data_scrapper.service.integration.KeService;
@@ -65,6 +67,25 @@ public class JobUtilService {
     @CacheEvict(value = "productCache", allEntries = true)
     public void evictProductCache() {
         log.info("Deleting product cache");
+    }
+
+    @Cacheable(value = "graphQlCache", key = "#offset + #categoryId + #limit")
+    public GraphQlCacheData getCachedGraphData(AtomicLong offset, Long categoryId, Long limit) {
+        return KeGraphToCachedGraph.keGQLResponseToCachedGraph(getResponse(offset, categoryId, limit));
+    }
+
+    public GraphQlCacheData getSimplifiedGraphData(AtomicLong offset, Long categoryId, Long limit) {
+        return KeGraphToCachedGraph.keGQLResponseToCachedGraph(getResponse(offset, categoryId, limit));
+    }
+
+    @CachePut(value = "graphQlCache", key = "#offset + #categoryId + #limit")
+    public GraphQlCacheData putCachedGraphData(KeGQLResponse keGQLResponse, AtomicLong offset, Long categoryId, Long limit) {
+        return KeGraphToCachedGraph.keGQLResponseToCachedGraph(keGQLResponse);
+    }
+
+    @CacheEvict(value = "graphQlCache", allEntries = true)
+    public void evictGraphCache() {
+        log.info("Deleting graph cache");
     }
 
     public KeGQLResponse getResponse(JobExecutionContext jobExecutionContext, AtomicLong offset, Long categoryId, Long limit) {
