@@ -72,6 +72,9 @@ public class PositionJob implements InterruptableJob {
     @Value("${app.stream.position.maxlen}")
     public Long maxlen;
 
+    @Value("${app.stream.position.offset}")
+    public Integer maxOffset;
+
     @Value("${app.stream.position.waitPending}")
     public Long waitPending;
 
@@ -103,7 +106,7 @@ public class PositionJob implements InterruptableJob {
         try {
             while (jobRunning) {
                 try {
-                    if (offset.get() >= 3000) {
+                    if (offset.get() >= maxOffset) {
                         log.info("Total offset - [{}] of category - [{}], " +
                                 "skipping further parsing... ", offset.get(), categoryId);
                         break;
